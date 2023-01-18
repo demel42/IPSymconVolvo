@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/common.php';
 require_once __DIR__ . '/../libs/local.php';
-require_once __DIR__ . '/../libs/images.php';
 
 class VolvoConfig extends IPSModule
 {
     use Volvo\StubsCommonLib;
     use VolvoLocalLib;
-    use VolvoImagesLib;
 
     private $ModuleDir;
 
@@ -32,7 +30,7 @@ class VolvoConfig extends IPSModule
 
         $this->InstallVarProfiles(false);
 
-        $this->ConnectParent('{2B3E3F00-33AC-4A54-8E20-F8B57241913D}');
+        $this->ConnectParent('{E730BFFA-6E1F-F615-D1B3-4D43A13B7285}');
     }
 
     public function ApplyChanges()

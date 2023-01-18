@@ -35,6 +35,8 @@ class VolvoVehicle extends IPSModule
         $this->RegisterTimer('UpdateStatus', 0, 'IPS_RequestAction(' . $this->InstanceID . ', "UpdateStatus", "");');
 
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
+
+		$this->ConnectParent('{E730BFFA-6E1F-F615-D1B3-4D43A13B7285}');
     }
 
     public function MessageSink($timestamp, $senderID, $message, $data)

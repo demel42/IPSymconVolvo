@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/common.php';
 require_once __DIR__ . '/../libs/local.php';
-require_once __DIR__ . '/../libs/images.php';
 
 class VolvoIO extends IPSModule
 {
     use Volvo\StubsCommonLib;
     use VolvoLocalLib;
-    use VolvoImagesLib;
 
     private static $semaphoreTM = 5 * 1000;
 
@@ -81,6 +79,14 @@ class VolvoIO extends IPSModule
             $this->MaintainStatus(self::$IS_INVALIDCONFIG);
             return;
         }
+
+        $apiLimits = [
+            [
+                'value' => 10000,
+                'unit'  => 'day',
+            ],
+        ];
+        $this->ApiCallsSetInfo($apiLimits, '');
 
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
