@@ -1,0 +1,19 @@
+{
+	"translations": {
+		"de": {
+			"Volvo configurator": "Volvo Konfigurator",
+
+			"__elements__": "",
+			"category for Volvo vehicles to be created": "Kategorie für anzulegende Volvo Fahrzeuge",
+
+			"Name": "Bezeichnung",
+			"VIN": "VIN",
+			"Model": "Modell",
+			"Body type": "Karosserie",
+			"Year": "Jahr",
+			"Drive type": "Antriebsart",
+
+			"__end__": ""
+		}
+	}
+}

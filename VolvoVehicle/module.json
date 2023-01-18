@@ -1,0 +1,18 @@
+{
+	"id": "{6C6B7979-37AA-69B7-2E19-7E10D92A97E3}",
+	"name": "VolvoVehicle",
+	"type": 3,
+	"vendor": "Volvo",
+	"aliases": [
+		"Volvo Vehicle"
+	],
+	"parentRequirements": [
+		"{83DF672B-CA66-5372-A632-E9A5406332A7}"
+	],
+	"childRequirements": [],
+	"implemented": [
+		"{83DF672B-CA66-5372-A632-E9A5406332A7}"
+	],
+	"prefix": "Volvo",
+	"url": "https://github.com/demel42/IPSymconVolvo/README.md"
+}

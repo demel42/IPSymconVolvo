@@ -1,0 +1,18 @@
+{
+	"id": "{2B3E3F00-33AC-4A54-8E20-F8B57241913D}",
+	"name": "VolvoIO",
+	"type": 1,
+	"vendor": "Volvo",
+	"aliases": [
+		"Volvo I/O"
+	],
+	"parentRequirements": [],
+	"childRequirements": [
+		"{76557D1D-4782-3FBA-81C8-78494D4B6908}"
+	],
+	"implemented": [
+		"{83DF672B-CA66-5372-A632-E9A5406332A7}"
+	],
+	"prefix": "Volvo",
+	"url": "https://github.com/demel42/IPSymconVolvo/README.md"
+}

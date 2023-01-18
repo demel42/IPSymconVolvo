@@ -1,0 +1,18 @@
+{
+	"id": "{4905DEEC-2A8D-74B6-138E-020C46999674}",
+	"name": "VolvoConfig",
+	"type": 4,
+	"vendor": "Volvo",
+	"aliases": [
+		"Volvo Konfigurator"
+	],
+	"parentRequirements": [
+		"{83DF672B-CA66-5372-A632-E9A5406332A7}"
+	],
+	"childRequirements": [],
+	"implemented": [
+		"{76557D1D-4782-3FBA-81C8-78494D4B6908}"
+	],
+	"prefix": "Volvo",
+	"url": "https://github.com/demel42/IPSymconVolvo/README.md"
+}

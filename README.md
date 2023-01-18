@@ -24,8 +24,8 @@
 
 ### a. Installation des Moduls
 
-Im [Module Store](https://www.symcon.de/service/dokumentation/komponenten/verwaltungskonsole/module-store/) ist das Modul unter dem Suchbegriff *ModuleTemplate* zu finden.<br>
-Alternativ kann das Modul über [Module Control](https://www.symcon.de/service/dokumentation/modulreferenz/module-control/) unter Angabe der URL `https://github.com/demel42/ModuleTemplate.git` installiert werden.
+Im [Module Store](https://www.symcon.de/service/dokumentation/komponenten/verwaltungskonsole/module-store/) ist das Modul unter dem Suchbegriff *Volvo* zu finden.<br>
+Alternativ kann das Modul über [Module Control](https://www.symcon.de/service/dokumentation/modulreferenz/module-control/) unter Angabe der URL `https://github.com/demel42/Volvo.git` installiert werden.
 
 ### b. Einrichtung in IPS
 
@@ -35,7 +35,7 @@ alle Funktionen sind über _RequestAction_ der jew. Variablen ansteuerbar
 
 ## 5. Konfiguration
 
-### ModuleTemplate Device
+### Volvo Vehicle
 
 #### Properties
 
@@ -60,14 +60,18 @@ Es werden folgende Variablenprofile angelegt:
 ## 6. Anhang
 
 ### GUIDs
-- Modul: `{0DCE4B6F-9176-DC9A-5502-1AF2B7573EB5}`
+- Modul: `{2563E223-0FDC-DE40-C61F-4EB9A2638993}`
 - Instanzen:
-  - ModuleTemplateDevice: `{B052AEAB-2687-02EB-DF40-74191E242A0B}`
+  - VolvoIO: `{E730BFFA-6E1F-F615-D1B3-4D43A13B7285}`
+  - VolvoConfig: `{4905DEEC-2A8D-74B6-138E-020C46999674}`
+  - VolvoVehicle: `{6C6B7979-37AA-69B7-2E19-7E10D92A97E3}`
 - Nachrichten:
+    - `{76557D1D-4782-3FBA-81C8-78494D4B6908}`: an VolvoConfig, VolvoDevice
+    - `{83DF672B-CA66-5372-A632-E9A5406332A7}`: an VolvoIO
 
 ### Quellen
 
 ## 7. Versions-Historie
 
-- 0.9 @ dd.mm.yyyy HH:MM (beta)
+- 0.9 @ 18.01.2023 10:28
   - Initiale Version

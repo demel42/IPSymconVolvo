@@ -1,0 +1,28 @@
+{
+	"translations": {
+		"de": { 
+			"Volvo": "Volvo",
+
+			"__function__": "CheckConfiguration",
+			"User and password of the Volvo account are required": "Benutzer und Passwort des Volvo-Kontos werden benötigt",
+
+			"__elements__": "",
+			"Disable instance": "Instanz deaktivieren",
+
+			"Account data": "Zugangsdaten",
+			"User": "Benutzer",
+			"Password": "Passwort",
+
+			"__actions__": "",
+			"Test access": "Zugang prüfen",
+			"Clear token": "Token löschen",
+
+			"__function__": "TestAccess",
+			"invalid account-data": "Ungültige Zugangsdaten",
+			"valid account-data": "Gültige Zugangsdaten",
+			"registered vehicles found": "registrierte Fahrzeuge gefunden",
+
+			"__end__": ""
+		}
+	}
+}
