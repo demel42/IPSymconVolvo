@@ -4,13 +4,22 @@
 			"Volvo": "Volvo",
 
 			"__function__": "CheckConfiguration",
-			"User and password of the Volvo account are required": "Benutzer und Passwort des Volvo-Kontos werden benötigt",
+			"Connection type must be set": "Verbindungstyp muss gesetzt sein",
+			"'VCC api key' must be specified": "'VCC API Key' muss angegeben sein",
+			"Username and password of the Volvo account are required": "Benutzer und Passwort des Volvo-Kontos werden benötigt",
 
 			"__elements__": "",
 			"Disable instance": "Instanz deaktivieren",
 
+			"Connection type": "Verbindungstyp",
+			"__options__": "connection_type",
+            "Please select a connection type": "Bitte einen Verbindungstyp auswählen",
+			"via IP-Symcon Connect": "über IP-Symcon Connect",
+			"with Volvo developer key": "mit Volvo Entwickler-Schlüssel",
+
 			"Account data": "Zugangsdaten",
-			"User": "Benutzer",
+			"VCC api key": "VCC API Key",
+			"Username": "Benutzer",
 			"Password": "Passwort",
 
 			"__actions__": "",
