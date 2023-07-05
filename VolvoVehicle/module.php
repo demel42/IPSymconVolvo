@@ -25,6 +25,8 @@ class VolvoVehicle extends IPSModule
 
         $this->RegisterPropertyBoolean('module_disable', false);
 
+        $this->RegisterPropertyBoolean('log_no_parent', true);
+
         $this->RegisterPropertyInteger('update_interval', 60);
 
         $this->RegisterAttributeString('UpdateInfo', '');
@@ -46,32 +48,6 @@ class VolvoVehicle extends IPSModule
         if ($message == IPS_KERNELMESSAGE && $data[0] == KR_READY) {
             $this->OverwriteUpdateInterval();
         }
-    }
-
-    private function CheckModulePrerequisites()
-    {
-        $r = [];
-
-        return $r;
-    }
-
-    private function CheckModuleConfiguration()
-    {
-        $r = [];
-
-        return $r;
-    }
-
-    private function CheckModuleUpdate(array $oldInfo, array $newInfo)
-    {
-        $r = [];
-
-        return $r;
-    }
-
-    private function CompleteModuleUpdate(array $oldInfo, array $newInfo)
-    {
-        return '';
     }
 
     public function ApplyChanges()
@@ -134,6 +110,12 @@ class VolvoVehicle extends IPSModule
             'suffix'  => 'Seconds',
             'minimum' => 0,
             'caption' => 'Update interval',
+        ];
+
+        $formElements[] = [
+            'type'    => 'CheckBox',
+            'name'    => 'log_no_parent',
+            'caption' => 'Generate message when the gateway is inactive',
         ];
 
         return $formElements;
@@ -212,13 +194,13 @@ class VolvoVehicle extends IPSModule
             return;
         }
 
-        /*
         if ($this->HasActiveParent() == false) {
-            $this->SendDebug(__FUNCTION__, 'has no active parent', 0);
-            $this->LogMessage('has no active parent instance', KL_WARNING);
-            return;
+            $this->SendDebug(__FUNCTION__, 'has no active parent/gateway', 0);
+            $log_no_parent = $this->ReadPropertyBoolean('log_no_parent');
+            if ($log_no_parent) {
+                $this->LogMessage($this->Translate('Instance has no active gateway'), KL_WARNING);
+            }
         }
-         */
 
         $this->SendDebug(__FUNCTION__, $this->PrintTimer('UpdateStatus'), 0);
     }

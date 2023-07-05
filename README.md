@@ -73,5 +73,5 @@ Es werden folgende Variablenprofile angelegt:
 
 ## 7. Versions-Historie
 
-- 0.9 @ 04.07.2023 14:44
+- 0.9 @ 05.07.2023 11:56
   - Initiale Version
