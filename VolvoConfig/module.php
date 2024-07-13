@@ -28,6 +28,7 @@ class VolvoConfig extends IPSModule
 
         $this->RegisterAttributeString('UpdateInfo', json_encode([]));
         $this->RegisterAttributeString('ModuleStats', json_encode([]));
+        $this->RegisterAttributeString('DataCache', json_encode([]));
 
         $this->InstallVarProfiles(false);
 
@@ -78,7 +79,7 @@ class VolvoConfig extends IPSModule
         $location = '';
 
         $dataCache = $this->ReadDataCache();
-        if (isset($dataCache['data']['vehicles'])) {
+        if (false && isset($dataCache['data']['vehicles'])) {
             $vehicles = $dataCache['data']['vehicles'];
             $this->SendDebug(__FUNCTION__, 'vehicles (from cache)=' . print_r($vehicles, true), 0);
         } else {
@@ -88,8 +89,23 @@ class VolvoConfig extends IPSModule
                 'Function' => 'GetVehicles'
             ];
             $data = $this->SendDataToParent(json_encode($SendData));
-            $vehicles = @json_decode($data, true);
-            $this->SendDebug(__FUNCTION__, 'vehicles=' . print_r($vehicles, true), 0);
+            $jvehicles = @json_decode($data, true);
+            $this->SendDebug(__FUNCTION__, 'jvehicles=' . print_r($jvehicles, true), 0);
+            $vehicles = [];
+            foreach ($jvehicles['data'] as $ent) {
+                $vin = $ent['vin'];
+                $SendData = [
+                    'DataID'   => '{83DF672B-CA66-5372-A632-E9A5406332A7}', // an VolvoIO
+                    'CallerID' => $this->InstanceID,
+                    'Function' => 'GetApiConnectedVehicle',
+                    'vin'      => $vin,
+                    'detail'   => '',
+                ];
+                $data = $this->SendDataToParent(json_encode($SendData));
+                $jvehicle = @json_decode($data, true);
+                $this->SendDebug(__FUNCTION__, 'jvehicle=' . print_r($jvehicle, true), 0);
+                $vehicles[] = $jvehicle['data'];
+            }
             if (is_array($vehicles)) {
                 $dataCache['data']['vehicles'] = $vehicles;
             }
@@ -103,27 +119,24 @@ class VolvoConfig extends IPSModule
             foreach ($vehicles as $vehicle) {
                 $this->SendDebug(__FUNCTION__, 'vehicle=' . print_r($vehicle, true), 0);
                 $vin = $vehicle['vin'];
-
-                /*
-                $model = $this->GetArrayElem($vehicle, 'attributes.model', '');
-                $year = $this->GetArrayElem($vehicle, 'attributes.year', '');
-                $bodyType = $this->GetArrayElem($vehicle, 'attributes.bodyType', '');
-                $driveTrain = $this->GetArrayElem($vehicle, 'attributes.driveTrain', '');
-                switch ($driveTrain) {
-                    case 'COMBUSTION':
-                        $driveType = self::$BMW_DRIVE_TYPE_COMBUSTION;
+                $year = $vehicle['modelYear'];
+                $model = $vehicle['descriptions']['model'];
+                $fuelType = $vehicle['fuelType'];
+                switch ($fuelType) {
+                    case 'DIESEL':
+                    case 'PETROL':
+                        $driveType = self::$VOLVO_DRIVE_TYPE_COMBUSTION;
                         break;
-                    case 'HYBRID':
-                        $driveType = self::$BMW_DRIVE_TYPE_HYBRID;
+                    case 'PETROL/ELECTRIC':
+                        $driveType = self::$VOLVO_DRIVE_TYPE_HYBRID;
                         break;
                     case 'ELECTRIC':
-                        $driveType = self::$BMW_DRIVE_TYPE_ELECTRIC;
+                        $driveType = self::$VOLVO_DRIVE_TYPE_ELECTRIC;
                         break;
                     default:
-                        $driveType = self::$BMW_DRIVE_TYPE_UNKNOWN;
+                        $driveType = self::$VOLVO_DRIVE_TYPE_UNKNOWN;
                         break;
                 }
-                 */
 
                 $instanceID = 0;
                 $vehicleName = '';
@@ -137,7 +150,7 @@ class VolvoConfig extends IPSModule
                 }
 
                 if ($instanceID && IPS_GetInstance($instanceID)['ConnectionID'] != IPS_GetInstance($this->InstanceID)['ConnectionID']) {
-                    // continue;
+                    continue;
                 }
 
                 $entry = [
@@ -146,15 +159,14 @@ class VolvoConfig extends IPSModule
                     'vin'         => $vin,
                     'model'       => $model,
                     'year'        => $year,
-                    'bodyType'    => $bodyType,
                     'driveType'   => $this->DriveType2String($driveType),
                     'create'      => [
                         'moduleID'      => $guid,
                         'location'      => $location,
-                        'info'          => $model . ' (' . $bodyType . '/' . $year . ')',
+                        'info'          => $model . ' (' . $year . ')',
                         'configuration' => [
-                            'vin'   => $vin,
-                            'model' => $driveType,
+                            'vin'        => $vin,
+                            'drive_type' => $driveType,
                         ]
                     ]
                 ];
@@ -190,7 +202,6 @@ class VolvoConfig extends IPSModule
                 'vin'         => $vin,
                 'model'       => '',
                 'year'        => '',
-                'bodyType'    => '',
                 'driveType'   => $this->DriveType2String($driveType),
             ];
             $entries[] = $entry;
@@ -202,13 +213,14 @@ class VolvoConfig extends IPSModule
 
     private function GetFormElements()
     {
-        $formElements = $this->GetCommonFormElements('BMW configurator');
+        $formElements = $this->GetCommonFormElements('Volvo configurator');
 
         if ($this->GetStatus() == self::$IS_UPDATEUNCOMPLETED) {
             return $formElements;
         }
 
         $entries = $this->getConfiguratorValues();
+        $this->SendDebug(__FUNCTION__, 'entries=' . print_r($entries, true), 0);
         $formElements[] = [
             'name'     => 'Volvo configuration',
             'type'     => 'Configurator',
@@ -232,11 +244,6 @@ class VolvoConfig extends IPSModule
                     'width'   => '150px'
                 ],
                 [
-                    'caption' => 'Body type',
-                    'name'    => 'bodyType',
-                    'width'   => '100px'
-                ],
-                [
                     'caption' => 'Year',
                     'name'    => 'year',
                     'width'   => '100px'
@@ -250,7 +257,17 @@ class VolvoConfig extends IPSModule
             'values'            => $entries,
             'discoveryInterval' => 60 * 60 * 24,
         ];
+
         $formElements[] = $this->GetRefreshDataCacheFormAction();
+        /* TEST */
+        $formElements[] = [
+            'type'    => 'Button',
+            'caption' => 'Reload',
+            'onClick' => 'IPS_RequestAction($id, "ReloadForm", "");',
+        ];
+        /* TEST */
+
+        $this->SendDebug(__FUNCTION__, 'formElements=' . print_r($formElements, true), 0);
 
         return $formElements;
     }
@@ -271,14 +288,42 @@ class VolvoConfig extends IPSModule
         $formActions[] = $this->GetInformationFormAction();
         $formActions[] = $this->GetReferencesFormAction();
 
+        /* TEST */
+        $formActions[] = $this->GetRefreshDataCacheFormAction();
+        $formActions[] = [
+            'type'    => 'Button',
+            'caption' => 'Reload',
+            'onClick' => 'IPS_RequestAction($id, "ReloadForm", "");',
+        ];
+        /* TEST */
+
         return $formActions;
+    }
+
+    private function LocalRequestAction($ident, $value)
+    {
+        $this->SendDebug(__FUNCTION__, 'ident ' . $ident, 0);
+        $r = true;
+        switch ($ident) {
+            case 'ReloadForm':
+                $this->ReloadForm();
+                break;
+            default:
+                $r = false;
+                break;
+        }
+        return $r;
     }
 
     public function RequestAction($ident, $value)
     {
+        if ($this->LocalRequestAction($ident, $value)) {
+            return;
+        }
         if ($this->CommonRequestAction($ident, $value)) {
             return;
         }
+
         switch ($ident) {
             default:
                 $this->SendDebug(__FUNCTION__, 'invalid ident ' . $ident, 0);

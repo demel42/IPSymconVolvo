@@ -62,10 +62,55 @@ trait VolvoLocalLib
     public static $CONNECTION_OAUTH = 1;
     public static $CONNECTION_DEVELOPER = 2;
 
+    // Antriebsart
+    private static $VOLVO_DRIVE_TYPE_UNKNOWN = 0;
+    private static $VOLVO_DRIVE_TYPE_ELECTRIC = 1;
+    private static $VOLVO_DRIVE_TYPE_HYBRID = 2;
+    private static $VOLVO_DRIVE_TYPE_COMBUSTION = 3;
+
     private function InstallVarProfiles(bool $reInstall = false)
     {
         if ($reInstall) {
             $this->SendDebug(__FUNCTION__, 'reInstall=' . $this->bool2str($reInstall), 0);
         }
+    }
+
+    private function DriveTypeMapping()
+    {
+        return [
+            self::$VOLVO_DRIVE_TYPE_ELECTRIC => [
+                'caption' => 'electric',
+            ],
+            self::$VOLVO_DRIVE_TYPE_HYBRID => [
+                'caption' => 'hybrid',
+            ],
+            self::$VOLVO_DRIVE_TYPE_COMBUSTION => [
+                'caption' => 'combustion',
+            ],
+        ];
+    }
+
+    private function DriveTypeAsOptions()
+    {
+        $maps = $this->DriveTypeMapping();
+        $opts = [];
+        foreach ($maps as $u => $e) {
+            $opts[] = [
+                'caption' => $e['caption'],
+                'value'   => $u,
+            ];
+        }
+        return $opts;
+    }
+
+    private function DriveType2String($driveType)
+    {
+        $maps = $this->DriveTypeMapping();
+        if (isset($maps[$driveType])) {
+            $ret = $this->Translate($maps[$driveType]['caption']);
+        } else {
+            $ret = $this->Translate('Unknown drive type') . ' ' . $driveType;
+        }
+        return $ret;
     }
 }

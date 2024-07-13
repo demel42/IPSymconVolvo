@@ -911,17 +911,17 @@ class VolvoIO extends IPSModule
             $txt = $this->Translate('valid account-data') . PHP_EOL;
             $jdata = json_decode($data, true);
             $n_vehicles = count($jdata['data']);
-			switch ($n_vehicles) {
-				case 0:
-					$txt .= $this->Translate('no registered vehicle found');
-					break;
-				case 1:
-					$txt .= $this->Translate('one registered vehicle found');
-					break;
-				default:
-					$txt .= $n_vehicles . ' ' . $this->Translate('registered vehicle found');
-					break;
-			}
+            switch ($n_vehicles) {
+                case 0:
+                    $txt .= $this->Translate('no registered vehicle found');
+                    break;
+                case 1:
+                    $txt .= $this->Translate('one registered vehicle found');
+                    break;
+                default:
+                    $txt .= $n_vehicles . ' ' . $this->Translate('registered vehicle found');
+                    break;
+            }
         }
         $this->SendDebug(__FUNCTION__, 'txt=' . $txt, 0);
         $this->PopupMessage($txt);
@@ -968,6 +968,15 @@ class VolvoIO extends IPSModule
                 case 'GetVehicles':
                     $ret = $this->GetVehicles();
                     break;
+                case 'GetApiConnectedVehicle':
+                    $ret = $this->GetApiConnectedVehicle($jdata['vin'], $jdata['detail']);
+                    break;
+                case 'GetApiEnergy':
+                    $ret = $this->GetApiEnergy($jdata['vin'], $jdata['detail']);
+                    break;
+                case 'GetApiLocation':
+                    $ret = $this->GetApiLocation($jdata['vin'], $jdata['detail']);
+                    break;
                 default:
                     $this->SendDebug(__FUNCTION__, 'unknown function "' . $jdata['Function'] . '"', 0);
                     break;
@@ -983,7 +992,7 @@ class VolvoIO extends IPSModule
     private function do_HttpRequest($endpoint, $params, $headerfields, $postfields, $mode)
     {
         $url = 'https://api.volvocars.com/' . $endpoint;
-		if (is_array($params) && count($params) > 0) {
+        if (is_array($params) && count($params) > 0) {
             $url .= '?' . http_build_query($params);
         }
 
@@ -1094,6 +1103,78 @@ class VolvoIO extends IPSModule
         ];
 
         $body = $this->do_HttpRequest('connected-vehicle/v2/vehicles', [], $headerfields, [], 'GET');
+        return $body;
+    }
+
+    private function GetApiConnectedVehicle($vin, $detail)
+    {
+        $vcc_api_key = $this->ReadPropertyString('vcc_api_key');
+
+        $access_token = $this->GetApiAccessToken();
+        if ($access_token == false) {
+            return false;
+        }
+
+        $uri = 'connected-vehicle/v2/vehicles/' . $vin;
+        if ($detail != '') {
+            $uri .= '/' . $detail;
+        }
+
+        $headerfields = [
+            'Accept'        => 'application/json',
+            'Authorization' => 'Bearer ' . $access_token,
+            'vcc-api-key'   => $vcc_api_key,
+        ];
+
+        $body = $this->do_HttpRequest($uri, [], $headerfields, [], 'GET');
+        return $body;
+    }
+
+    private function GetApiEnergy($vin, $detail)
+    {
+        $vcc_api_key = $this->ReadPropertyString('vcc_api_key');
+
+        $access_token = $this->GetApiAccessToken();
+        if ($access_token == false) {
+            return false;
+        }
+
+        $uri = 'energy/v1/vehicles/' . $vin;
+        if ($detail != '') {
+            $uri .= '/' . $detail;
+        }
+
+        $headerfields = [
+            'Accept'        => 'application/vnd.volvocars.api.energy.vehicledata.v1+json',
+            'Authorization' => 'Bearer ' . $access_token,
+            'vcc-api-key'   => $vcc_api_key,
+        ];
+
+        $body = $this->do_HttpRequest($uri, [], $headerfields, [], 'GET');
+        return $body;
+    }
+
+    private function GetApiLocation($vin, $detail)
+    {
+        $vcc_api_key = $this->ReadPropertyString('vcc_api_key');
+
+        $access_token = $this->GetApiAccessToken();
+        if ($access_token == false) {
+            return false;
+        }
+
+        $uri = 'location/v1/vehicles/' . $vin;
+        if ($detail != '') {
+            $uri .= '/' . $detail;
+        }
+
+        $headerfields = [
+            'Accept'        => 'application/json',
+            'Authorization' => 'Bearer ' . $access_token,
+            'vcc-api-key'   => $vcc_api_key,
+        ];
+
+        $body = $this->do_HttpRequest($uri, [], $headerfields, [], 'GET');
         return $body;
     }
 }

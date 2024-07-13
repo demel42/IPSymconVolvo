@@ -1,10 +1,14 @@
 {
 	"translations": {
 		"de": {
-			"ModuleTemplate Device": "TestModule Device",
+			"Volvo vehicle": "Volvo Fahrzeug",
 
 			"__properties__": "",
 			"Disable instance": "Instanz deaktivieren",
+
+			"Vehicle data": "Fahrzeugdaten",
+            "VIN": "Fahrgestellnummer",
+            "mode of driving": "Antriebsart",
 
 			"Update interval": "Aktualisierungsintervall",
 			"Seconds": "Sekunden",

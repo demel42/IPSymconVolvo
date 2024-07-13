@@ -1,6 +1,12 @@
 {
 	"translations": {
 		"de": {
+			"__options__": "driveType",
+			"electric": "Elektrisch",
+			"hybrid": "Hybrid",
+			"combustion": "Verbrenner",
+			"Unknown drive type": "unbekannte Antriebsart",
+
 			"__status__": "",
 			"Instance is inactive (unauthorized)": "Instanz ist inaktiv (Authorisierung fehlerhaft)",
 			"Instance is inactive (forbidden)": "Instanz ist inaktiv (fehlende Berechtigung)",
