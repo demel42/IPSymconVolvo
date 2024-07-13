@@ -10,13 +10,16 @@ class VolvoVehicle extends IPSModule
     use Volvo\StubsCommonLib;
     use VolvoLocalLib;
 
-    private $ModuleDir;
-
     public function __construct(string $InstanceID)
     {
         parent::__construct($InstanceID);
 
-        $this->ModuleDir = __DIR__;
+        $this->CommonConstruct(__DIR__);
+    }
+
+    public function __destruct()
+    {
+        $this->CommonDestruct();
     }
 
     public function Create()

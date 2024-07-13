@@ -22,6 +22,11 @@
 			"Username": "Benutzer",
 			"Password": "Passwort",
 
+			"Collect data of API calls": "Daten von API-Aufrufen sammeln",
+
+			"__media__": "",
+			"API call statistics": "API-Aufruf-Statistkdaten",
+
 			"__actions__": "",
 			"Test access": "Zugang prüfen",
 			"Clear token": "Token löschen",
@@ -29,6 +34,8 @@
 			"__function__": "TestAccess",
 			"invalid account-data": "Ungültige Zugangsdaten",
 			"valid account-data": "Gültige Zugangsdaten",
+			"no registered vehicle found": "kein registriertes Fahrzeug gefunden",
+			"one registered vehicle found": "ein registriertes Fahrzeug gefunden",
 			"registered vehicles found": "registrierte Fahrzeuge gefunden",
 
 			"__end__": ""

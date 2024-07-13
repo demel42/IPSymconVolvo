@@ -61,15 +61,19 @@ class VolvoIO extends IPSModule
 
     private static $semaphoreTM = 5 * 1000;
 
-    private $ModuleDir;
     private $SemaphoreID;
 
     public function __construct(string $InstanceID)
     {
         parent::__construct($InstanceID);
 
-        $this->ModuleDir = __DIR__;
+        $this->CommonConstruct(__DIR__);
         $this->SemaphoreID = __CLASS__ . '_' . $InstanceID;
+    }
+
+    public function __destruct()
+    {
+        $this->CommonDestruct();
     }
 
     public function Create()
@@ -85,10 +89,12 @@ class VolvoIO extends IPSModule
         $this->RegisterPropertyString('username', '');
         $this->RegisterPropertyString('password', '');
 
+        $this->RegisterPropertyBoolean('collectApiCallStats', true);
+
         $this->RegisterAttributeString('ApiRefreshToken', json_encode([]));
 
-        $this->RegisterAttributeString('UpdateInfo', '');
-        $this->RegisterAttributeString('ApiCallStats', json_encode([]));
+        $this->RegisterAttributeString('UpdateInfo', json_encode([]));
+        $this->RegisterAttributeString('ModuleStats', json_encode([]));
 
         $this->InstallVarProfiles(false);
 
@@ -156,7 +162,11 @@ class VolvoIO extends IPSModule
                 'unit'  => 'day',
             ],
         ];
-        $this->ApiCallsSetInfo($apiLimits, '');
+        $this->ApiCallSetInfo($apiLimits, '');
+
+        $vpos = 1000;
+        $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
+        $this->MaintainMedia('ApiCallStats', $this->Translate('API call statistics'), MEDIATYPE_DOCUMENT, '.txt', false, $vpos++, $collectApiCallStats);
 
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
@@ -295,6 +305,12 @@ class VolvoIO extends IPSModule
                 break;
         }
 
+        $formElements[] = [
+            'type'    => 'CheckBox',
+            'name'    => 'collectApiCallStats',
+            'caption' => 'Collect data of API calls'
+        ];
+
         return $formElements;
     }
 
@@ -326,19 +342,25 @@ class VolvoIO extends IPSModule
             'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "TestAccess", "");',
         ];
 
+        $items = [
+            $this->GetInstallVarProfilesFormItem(),
+            [
+                'type'    => 'Button',
+                'caption' => 'Clear token',
+                'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "ClearToken", "");',
+            ],
+        ];
+
+        $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
+        if ($collectApiCallStats) {
+            $items[] = $this->GetApiCallStatsFormItem();
+        }
+
         $formActions[] = [
             'type'      => 'ExpansionPanel',
             'caption'   => 'Expert area',
             'expanded'  => false,
-            'items'     => [
-                $this->GetInstallVarProfilesFormItem(),
-                [
-                    'type'    => 'Button',
-                    'label'   => 'Clear token',
-                    'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "ClearToken", "");',
-                ],
-                $this->GetApiCallStatsFormItem(),
-            ]
+            'items'     => $items,
         ];
 
         $formActions[] = $this->GetInformationFormAction();
@@ -512,17 +534,6 @@ class VolvoIO extends IPSModule
         return $jdata;
     }
 
-    private function build_url($url, $params)
-    {
-        $n = 0;
-        if (is_array($params)) {
-            foreach ($params as $param => $value) {
-                $url .= ($n++ ? '&' : '?') . $param . '=' . rawurlencode(strval($value));
-            }
-        }
-        return $url;
-    }
-
     private function build_header($headerfields)
     {
         $header = [];
@@ -676,7 +687,10 @@ class VolvoIO extends IPSModule
             $this->SendDebug(__FUNCTION__, 'new refresh_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
         }
 
-        $this->ApiCallsCollect($url, $err, $statuscode);
+        $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
+        if ($collectApiCallStats) {
+            $this->ApiCallCollect($url, $err, $statuscode);
+        }
 
         if ($statuscode) {
             $this->SendDebug(__FUNCTION__, '    statuscode=' . $statuscode . ', err=' . $err, 0);
@@ -839,7 +853,10 @@ class VolvoIO extends IPSModule
             $this->SendDebug(__FUNCTION__, 'new refresh_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
         }
 
-        $this->ApiCallsCollect($url, $err, $statuscode);
+        $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
+        if ($collectApiCallStats) {
+            $this->ApiCallCollect($url, $err, $statuscode);
+        }
 
         if ($statuscode) {
             $this->SendDebug(__FUNCTION__, '    statuscode=' . $statuscode . ', err=' . $err, 0);
@@ -886,18 +903,26 @@ class VolvoIO extends IPSModule
 
         $txt = '';
 
-        $r = $this->GetVehicles();
-        /*
-        if ($r == false) {
+        $data = $this->GetVehicles();
+        if ($data == false) {
             $txt .= $this->Translate('invalid account-data') . PHP_EOL;
             $txt .= PHP_EOL;
         } else {
             $txt = $this->Translate('valid account-data') . PHP_EOL;
-            $vehicles = json_decode($r, true);
-            $n_vehicles = count($vehicles);
-            $txt .= $n_vehicles . ' ' . $this->Translate('registered vehicles found');
+            $jdata = json_decode($data, true);
+            $n_vehicles = count($jdata['data']);
+			switch ($n_vehicles) {
+				case 0:
+					$txt .= $this->Translate('no registered vehicle found');
+					break;
+				case 1:
+					$txt .= $this->Translate('one registered vehicle found');
+					break;
+				default:
+					$txt .= $n_vehicles . ' ' . $this->Translate('registered vehicle found');
+					break;
+			}
         }
-         */
         $this->SendDebug(__FUNCTION__, 'txt=' . $txt, 0);
         $this->PopupMessage($txt);
     }
@@ -957,7 +982,11 @@ class VolvoIO extends IPSModule
 
     private function do_HttpRequest($endpoint, $params, $headerfields, $postfields, $mode)
     {
-        $url = $this->build_url('https://api.volvocars.com/' . $endpoint, $params);
+        $url = 'https://api.volvocars.com/' . $endpoint;
+		if (is_array($params) && count($params) > 0) {
+            $url .= '?' . http_build_query($params);
+        }
+
         $header = $this->build_header($headerfields);
         $postdata = http_build_query($postfields);
 
@@ -1032,7 +1061,10 @@ class VolvoIO extends IPSModule
             $this->SetBuffer('ApiAccessToken', json_encode([]));
         }
 
-        $this->ApiCallsCollect($url, $err, $statuscode);
+        $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
+        if ($collectApiCallStats) {
+            $this->ApiCallCollect($url, $err, $statuscode);
+        }
 
         if ($statuscode) {
             $this->SendDebug(__FUNCTION__, '    statuscode=' . $statuscode . ', err=' . $err, 0);
@@ -1056,12 +1088,12 @@ class VolvoIO extends IPSModule
         }
 
         $headerfields = [
-            'Accept'        => 'application/vnd.volvocars.api.connected-vehicle.vehiclelist.v1+json',
+            'Accept'        => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
             'vcc-api-key'   => $vcc_api_key,
         ];
 
-        $body = $this->do_HttpRequest('connected-vehicle/v1/vehicles', [], $headerfields, [], 'GET');
+        $body = $this->do_HttpRequest('connected-vehicle/v2/vehicles', [], $headerfields, [], 'GET');
         return $body;
     }
 }

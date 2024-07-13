@@ -10,23 +10,24 @@ class VolvoConfig extends IPSModule
     use Volvo\StubsCommonLib;
     use VolvoLocalLib;
 
-    private $ModuleDir;
-
     public function __construct(string $InstanceID)
     {
         parent::__construct($InstanceID);
 
-        $this->ModuleDir = __DIR__;
+        $this->CommonConstruct(__DIR__);
+    }
+
+    public function __destruct()
+    {
+        $this->CommonDestruct();
     }
 
     public function Create()
     {
         parent::Create();
 
-        $this->RegisterPropertyInteger('ImportCategoryID', 0);
-
-        $this->RegisterAttributeString('UpdateInfo', '');
-        $this->RegisterAttributeString('DataCache', '');
+        $this->RegisterAttributeString('UpdateInfo', json_encode([]));
+        $this->RegisterAttributeString('ModuleStats', json_encode([]));
 
         $this->InstallVarProfiles(false);
 
@@ -37,7 +38,7 @@ class VolvoConfig extends IPSModule
     {
         parent::ApplyChanges();
 
-        $propertyNames = ['ImportCategoryID'];
+        $propertyNames = [];
         $this->MaintainReferences($propertyNames);
 
         if ($this->CheckPrerequisites() != false) {
@@ -74,7 +75,7 @@ class VolvoConfig extends IPSModule
             return $entries;
         }
 
-        $catID = $this->ReadPropertyInteger('ImportCategoryID');
+        $location = '';
 
         $dataCache = $this->ReadDataCache();
         if (isset($dataCache['data']['vehicles'])) {
@@ -149,7 +150,7 @@ class VolvoConfig extends IPSModule
                     'driveType'   => $this->DriveType2String($driveType),
                     'create'      => [
                         'moduleID'      => $guid,
-                        'location'      => $this->GetConfiguratorLocation($catID),
+                        'location'      => $location,
                         'info'          => $model . ' (' . $bodyType . '/' . $year . ')',
                         'configuration' => [
                             'vin'   => $vin,
@@ -159,6 +160,7 @@ class VolvoConfig extends IPSModule
                 ];
 
                 $entries[] = $entry;
+                $this->SendDebug(__FUNCTION__, 'instanceID=' . $instanceID . ', entry=' . print_r($entry, true), 0);
             }
         }
 
@@ -192,7 +194,7 @@ class VolvoConfig extends IPSModule
                 'driveType'   => $this->DriveType2String($driveType),
             ];
             $entries[] = $entry;
-            $this->SendDebug(__FUNCTION__, 'missing entry=' . print_r($entry, true), 0);
+            $this->SendDebug(__FUNCTION__, 'lost: instanceID=' . $instID . ', entry=' . print_r($entry, true), 0);
         }
 
         return $entries;
@@ -206,15 +208,9 @@ class VolvoConfig extends IPSModule
             return $formElements;
         }
 
-        $formElements[] = [
-            'type'    => 'SelectCategory',
-            'name'    => 'ImportCategoryID',
-            'caption' => 'category for BMW vehicles to be created'
-        ];
-
         $entries = $this->getConfiguratorValues();
         $formElements[] = [
-            'name'     => 'BMW configuration',
+            'name'     => 'Volvo configuration',
             'type'     => 'Configurator',
             'rowCount' => count($entries),
             'add'      => false,
