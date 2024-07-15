@@ -57,21 +57,6 @@ class VolvoVehicle extends IPSModule
             $r[] = $this->Translate('A registered VIN is required');
         }
 
-        /*
-        $active_googlemap = $this->ReadPropertyBoolean('active_googlemap');
-        $active_current_position = $this->ReadPropertyBoolean('active_current_position');
-        if ($active_googlemap == true && $active_current_position == false) {
-            $this->SendDebug(__FUNCTION__, '"active_googlemap" needs "active_current_position"', 0);
-            $r[] = $this->Translate('Show position in Map need saving position');
-        }
-
-        $api_key = $this->ReadPropertyString('googlemap_api_key');
-        if ($active_googlemap == true && $api_key == false) {
-            $this->SendDebug(__FUNCTION__, '"active_googlemap" needs "api_key"', 0);
-            $r[] = $this->Translate('Show position in GoogleMap need the API-Key');
-        }
-         */
-
         return $r;
     }
 
@@ -108,7 +93,61 @@ class VolvoVehicle extends IPSModule
             return;
         }
 
+        $drive_type = $this->ReadPropertyInteger('drive_type');
+        $has_fuel = in_array($drive_type, [self::$VOLVO_DRIVE_TYPE_HYBRID, self::$VOLVO_DRIVE_TYPE_COMBUSTION]);
+        $has_electric = in_array($drive_type, [self::$VOLVO_DRIVE_TYPE_ELECTRIC, self::$VOLVO_DRIVE_TYPE_HYBRID]);
+
         $vpos = 1;
+        $this->MaintainVariable('Mileage', $this->Translate('Mileage'), VARIABLETYPE_INTEGER, 'Volvo.Mileage', $vpos++, true);
+        if ($has_fuel) {
+            $this->MaintainVariable('FuelAmount', $this->Translate('Fuel amount'), VARIABLETYPE_FLOAT, 'Volvo.FuelAmount', $vpos++, true);
+            $this->MaintainVariable('RemainingFuelRange', $this->Translate('Remaining fuel range'), VARIABLETYPE_FLOAT, 'Volvo.Range', $vpos++, true);
+        }
+
+        if ($has_electric) {
+            $this->MaintainVariable('RemainingElectricRange', $this->Translate('Remaining electric range'), VARIABLETYPE_FLOAT, 'Volvo.Range', $vpos++, true);
+        }
+
+        $vpos = 10;
+        $this->MaintainVariable('EngineState', $this->Translate('Engine'), VARIABLETYPE_INTEGER, 'Volvo.EngineState', $vpos++, true);
+
+        $vpos = 20;
+        if ($has_electric) {
+            $this->MaintainVariable('BatteryCapacity', $this->Translate('Battery capacity'), VARIABLETYPE_FLOAT, 'Volvo.BatteryCapacity', $vpos++, true);
+            $this->MaintainVariable('BatteryChargeLevel', $this->Translate('Battery charge level'), VARIABLETYPE_FLOAT, 'Volvo.BatteryChargeLevel', $vpos++, true);
+            $this->MaintainVariable('ConnectionState', $this->Translate('Connection state'), VARIABLETYPE_INTEGER, 'Volvo.ConnectionState', $vpos++, true);
+            $this->MaintainVariable('ChargingState', $this->Translate('Charging state'), VARIABLETYPE_INTEGER, 'Volvo.ChargingState', $vpos++, true);
+        }
+
+        $vpos = 30;
+        $this->MaintainVariable('CentralLockState', $this->Translate('Central lock'), VARIABLETYPE_INTEGER, 'Volvo.CentralLockState', $vpos++, true);
+        $this->MaintainVariable('FrontLeftDoorState', $this->Translate('Door front left'), VARIABLETYPE_INTEGER, 'Volvo.DoorState', $vpos++, true);
+        $this->MaintainVariable('FrontRightDoorState', $this->Translate('Door front right'), VARIABLETYPE_INTEGER, 'Volvo.DoorState', $vpos++, true);
+        $this->MaintainVariable('RearLeftDoorState', $this->Translate('Door rear left'), VARIABLETYPE_INTEGER, 'Volvo.DoorState', $vpos++, true);
+        $this->MaintainVariable('RearRightDoorState', $this->Translate('Door rear right'), VARIABLETYPE_INTEGER, 'Volvo.DoorState', $vpos++, true);
+        $this->MaintainVariable('HoodState', $this->Translate('Hood'), VARIABLETYPE_INTEGER, 'Volvo.DoorState', $vpos++, true);
+        $this->MaintainVariable('TailgateState', $this->Translate('Tailgate'), VARIABLETYPE_INTEGER, 'Volvo.DoorState', $vpos++, true);
+        $this->MaintainVariable('TankLidState', $this->Translate('Tanklid'), VARIABLETYPE_INTEGER, 'Volvo.DoorState', $vpos++, true);
+
+        $vpos = 40;
+        $this->MaintainVariable('FrontLeftWindowState', $this->Translate('Window front left'), VARIABLETYPE_INTEGER, 'Volvo.WindowState', $vpos++, true);
+        $this->MaintainVariable('FrontRightWindowState', $this->Translate('Window front right'), VARIABLETYPE_INTEGER, 'Volvo.WindowState', $vpos++, true);
+        $this->MaintainVariable('RearLeftWindowState', $this->Translate('Window rear left'), VARIABLETYPE_INTEGER, 'Volvo.WindowState', $vpos++, true);
+        $this->MaintainVariable('RearRightWindowState', $this->Translate('Window rear right'), VARIABLETYPE_INTEGER, 'Volvo.WindowState', $vpos++, true);
+        $this->MaintainVariable('SunroofState', $this->Translate('Sunroof'), VARIABLETYPE_INTEGER, 'Volvo.WindowState', $vpos++, true);
+
+        $vpos = 50;
+        $this->MaintainVariable('FrontLeftTyreState', $this->Translate('Tyre front left'), VARIABLETYPE_INTEGER, 'Volvo.TyreState', $vpos++, true);
+        $this->MaintainVariable('FrontRightTyreState', $this->Translate('Tyre front right'), VARIABLETYPE_INTEGER, 'Volvo.TyreState', $vpos++, true);
+        $this->MaintainVariable('RearLeftTyreState', $this->Translate('Tyre rear left'), VARIABLETYPE_INTEGER, 'Volvo.TyreState', $vpos++, true);
+        $this->MaintainVariable('RearRightTyreState', $this->Translate('Tyre rear right'), VARIABLETYPE_INTEGER, 'Volvo.TyreState', $vpos++, true);
+
+        $vpos = 70;
+        $this->MaintainVariable('CurrentLongitude', $this->Translate('Current longitude'), VARIABLETYPE_FLOAT, 'Volvo.Location', $vpos++, true);
+        $this->MaintainVariable('CurrentLatitude', $this->Translate('Current latitude'), VARIABLETYPE_FLOAT, 'Volvo.Location', $vpos++, true);
+        $this->MaintainVariable('CurrentAltitude', $this->Translate('Current altitude'), VARIABLETYPE_INTEGER, 'Volvo.Altitude', $vpos++, true);
+        $this->MaintainVariable('CurrentDirection', $this->Translate('Current direction'), VARIABLETYPE_INTEGER, 'Volvo.Heading', $vpos++, true);
+        $this->MaintainVariable('LastPositionMessage', $this->Translate('Last position message'), VARIABLETYPE_INTEGER, '~UnixTimestamp', $vpos++, true);
 
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
@@ -241,33 +280,317 @@ class VolvoVehicle extends IPSModule
             }
         }
 
+        $drive_type = $this->ReadPropertyInteger('drive_type');
+        $has_fuel = in_array($drive_type, [self::$VOLVO_DRIVE_TYPE_HYBRID, self::$VOLVO_DRIVE_TYPE_COMBUSTION]);
+        $has_electric = in_array($drive_type, [self::$VOLVO_DRIVE_TYPE_ELECTRIC, self::$VOLVO_DRIVE_TYPE_HYBRID]);
+
         $this->SendDebug(__FUNCTION__, 'start ...', 0);
         $time_start = microtime(true);
+        $fnd = false;
+        $chg = false;
 
         $vehicle = $this->GetApiConnectedVehicle();
         if ($vehicle != false) {
             $this->SendDebug(__FUNCTION__, 'vehicle=' . print_r($vehicle, true), 0);
+
             $model = $this->GetArrayElem($vehicle, 'data.descriptions.model', '');
             $year = $this->GetArrayElem($vehicle, 'data.modelYear', '');
             $summary = $model . ' (' . $year . ')';
             $this->SetSummary($summary);
+
+            if ($has_electric) {
+                $batteryCapacityKWH = $this->GetArrayElem($vehicle, 'data.batteryCapacityKWH', 0, $fnd);
+                if ($fnd) {
+                    $this->SendDebug(__FUNCTION__, '... BatteryCapacity (vehicle:data.batteryCapacityKWH)=' . $batteryCapacityKWH, 0);
+                    $this->SaveValue('BatteryCapacity', $batteryCapacityKWH, $chg);
+                }
+            }
         }
 
-        $data = $this->GetApiConnectedVehicle('engine');
-        $data = $this->GetApiConnectedVehicle('diagnostics');
-        $data = $this->GetApiConnectedVehicle('brakes');
-        $data = $this->GetApiConnectedVehicle('windows');
-        $data = $this->GetApiConnectedVehicle('doors');
-        $data = $this->GetApiConnectedVehicle('fuel');
-        $data = $this->GetApiConnectedVehicle('engine-status');
-        $data = $this->GetApiConnectedVehicle('odometer');
-        $data = $this->GetApiConnectedVehicle('statistics');
-        $data = $this->GetApiConnectedVehicle('tyres');
-        $data = $this->GetApiConnectedVehicle('warnings');
+        $odometer = $this->GetApiConnectedVehicle('odometer');
+        if ($odometer != false) {
+            $this->SendDebug(__FUNCTION__, 'odometer=' . print_r($odometer, true), 0);
 
-        $data = $this->GetApiEnergy('recharge-status');
+            $mileage = $this->GetArrayElem($odometer, 'data.odometer.value', 0, $fnd);
+            if ($fnd) {
+                $this->SendDebug(__FUNCTION__, '... Mileage (odometer:data.odometer.value)=' . $mileage, 0);
+                $this->SaveValue('Mileage', $mileage, $chg);
+            }
+        }
 
-        $data = $this->GetApiLocation('location');
+        $engine_status = $this->GetApiConnectedVehicle('engine-status');
+        if ($engine_status != false) {
+            $this->SendDebug(__FUNCTION__, 'engine_status=' . print_r($engine_status, true), 0);
+
+            $engineStatus = $this->GetArrayElem($engine_status, 'data.engineStatus.value', '', $fnd);
+            if ($fnd) {
+                $engineState = $this->MapEngineState($engineStatus);
+                $this->SendDebug(__FUNCTION__, '... EngineState (engine-status:data.engineStatus.value)=' . $engineStatus . '/' . $engineState, 0);
+                $this->SaveValue('EngineState', $engineState, $chg);
+            }
+        }
+
+        $doors = $this->GetApiConnectedVehicle('doors');
+        if ($doors != false) {
+            $this->SendDebug(__FUNCTION__, 'doors=' . print_r($doors, true), 0);
+
+            $centralLock = $this->GetArrayElem($doors, 'data.centralLock.value', '', $fnd);
+            if ($fnd) {
+                $centralLockState = $this->MapCentralLockState($centralLock);
+                $this->SendDebug(__FUNCTION__, '... CentralLockState (doors:data.centralLock.value)=' . $centralLock . '/' . $centralLockState, 0);
+                $this->SaveValue('CentralLockState', $centralLockState, $chg);
+            }
+
+            $frontLeftDoor = $this->GetArrayElem($doors, 'data.frontLeftDoor.value', '', $fnd);
+            if ($fnd) {
+                $frontLeftDoorState = $this->MapDoorState($frontLeftDoor);
+                $this->SendDebug(__FUNCTION__, '... FrontLeftDoorState (doors:data.frontLeftDoor.value)=' . $frontLeftDoor . '/' . $frontLeftDoorState, 0);
+                $this->SaveValue('FrontLeftDoorState', $frontLeftDoorState, $chg);
+            }
+
+            $frontRightDoor = $this->GetArrayElem($doors, 'data.frontRightDoor.value', '', $fnd);
+            if ($fnd) {
+                $frontRightDoorState = $this->MapDoorState($frontRightDoor);
+                $this->SendDebug(__FUNCTION__, '... FrontRightDoorState (doors:data.frontRightDoor.value)=' . $frontRightDoor . '/' . $frontRightDoorState, 0);
+                $this->SaveValue('FrontRightDoorState', $frontRightDoorState, $chg);
+            }
+
+            $rearLeftDoor = $this->GetArrayElem($doors, 'data.rearLeftDoor.value', '', $fnd);
+            if ($fnd) {
+                $rearLeftDoorState = $this->MapDoorState($rearLeftDoor);
+                $this->SendDebug(__FUNCTION__, '... RearLeftDoorState (doors:data.rearLeftDoor.value)=' . $rearLeftDoor . '/' . $rearLeftDoorState, 0);
+                $this->SaveValue('RearLeftDoorState', $rearLeftDoorState, $chg);
+            }
+
+            $rearRightDoor = $this->GetArrayElem($doors, 'data.rearRightDoor.value', '', $fnd);
+            if ($fnd) {
+                $rearRightDoorState = $this->MapDoorState($rearRightDoor);
+                $this->SendDebug(__FUNCTION__, '... RearRightDoorState (doors:data.rearRightDoor.value)=' . $rearRightDoor . '/' . $rearRightDoorState, 0);
+                $this->SaveValue('RearRightDoorState', $rearRightDoorState, $chg);
+            }
+
+            $hood = $this->GetArrayElem($doors, 'data.hood.value', '', $fnd);
+            if ($fnd) {
+                $hoodState = $this->MapDoorState($hood);
+                $this->SendDebug(__FUNCTION__, '... HoodState (doors:data.hood.value)=' . $hood . '/' . $hoodState, 0);
+                $this->SaveValue('HoodState', $hoodState, $chg);
+            }
+
+            $tailgate = $this->GetArrayElem($doors, 'data.tailgate.value', '', $fnd);
+            if ($fnd) {
+                $tailgateState = $this->MapDoorState($tailgate);
+                $this->SendDebug(__FUNCTION__, '... TailgateState (doors:data.tailgate.value)=' . $tailgate . '/' . $tailgateState, 0);
+                $this->SaveValue('TailgateState', $tailgateState, $chg);
+            }
+
+            $tankLid = $this->GetArrayElem($doors, 'data.tankLid.value', '', $fnd);
+            if ($fnd) {
+                $tankLidState = $this->MapDoorState($tankLid);
+                $this->SendDebug(__FUNCTION__, '... TankLidState (doors:data.tankLid.value)=' . $tankLid . '/' . $tankLidState, 0);
+                $this->SaveValue('TankLidState', $tankLidState, $chg);
+            }
+        }
+
+        $windows = $this->GetApiConnectedVehicle('windows');
+        if ($windows != false) {
+            $this->SendDebug(__FUNCTION__, 'windows=' . print_r($windows, true), 0);
+
+            $frontLeftWindow = $this->GetArrayElem($windows, 'data.frontLeftWindow.value', '', $fnd);
+            if ($fnd) {
+                $frontLeftWindowState = $this->MapWindowState($frontLeftWindow);
+                $this->SendDebug(__FUNCTION__, '... FrontLeftWindowState (windows:data.frontLeftWindow.value)=' . $frontLeftWindow . '/' . $frontLeftWindowState, 0);
+                $this->SaveValue('FrontLeftWindowState', $frontLeftWindowState, $chg);
+            }
+
+            $frontRightWindow = $this->GetArrayElem($windows, 'data.frontRightWindow.value', '', $fnd);
+            if ($fnd) {
+                $frontRightWindowState = $this->MapWindowState($frontRightWindow);
+                $this->SendDebug(__FUNCTION__, '... FrontRightWindowState (windows:data.frontRightWindow.value)=' . $frontRightWindow . '/' . $frontRightWindowState, 0);
+                $this->SaveValue('FrontRightWindowState', $frontRightWindowState, $chg);
+            }
+
+            $rearLeftWindow = $this->GetArrayElem($windows, 'data.rearLeftWindow.value', '', $fnd);
+            if ($fnd) {
+                $rearLeftWindowState = $this->MapWindowState($rearLeftWindow);
+                $this->SendDebug(__FUNCTION__, '... RearLeftWindowState (windows:data.rearLeftWindow.value)=' . $rearLeftWindow . '/' . $rearLeftWindowState, 0);
+                $this->SaveValue('RearLeftWindowState', $rearLeftWindowState, $chg);
+            }
+
+            $rearRightWindow = $this->GetArrayElem($windows, 'data.rearRightWindow.value', '', $fnd);
+            if ($fnd) {
+                $rearRightWindowState = $this->MapWindowState($rearRightWindow);
+                $this->SendDebug(__FUNCTION__, '... RearRightWindowState (windows:data.rearRightWindow.value)=' . $rearRightWindow . '/' . $rearRightWindowState, 0);
+                $this->SaveValue('RearRightWindowState', $rearRightWindowState, $chg);
+            }
+
+            $sunroof = $this->GetArrayElem($windows, 'data.sunroof.value', '', $fnd);
+            if ($fnd) {
+                $sunroofState = $this->MapWindowState($sunroof);
+                $this->SendDebug(__FUNCTION__, '... SunroofState (windows:data.sunroof.value)=' . $sunroof . '/' . $sunroofState, 0);
+                $this->SaveValue('SunroofState', $sunroofState, $chg);
+            }
+        }
+
+        $tyres = $this->GetApiConnectedVehicle('tyres');
+        if ($tyres != false) {
+            $this->SendDebug(__FUNCTION__, 'tyres=' . print_r($tyres, true), 0);
+
+            $frontLeft = $this->GetArrayElem($tyres, 'data.frontLeft.value', '', $fnd);
+            if ($fnd) {
+                $frontLeftTyreState = $this->MapTyreState($frontLeft);
+                $this->SendDebug(__FUNCTION__, '... FrontLeftTyreState (tyres:data.frontLeftTyre.value)=' . $frontLeft . '/' . $frontLeftTyreState, 0);
+                $this->SaveValue('FrontLeftTyreState', $frontLeftTyreState, $chg);
+            }
+
+            $frontRight = $this->GetArrayElem($tyres, 'data.frontRight.value', '', $fnd);
+            if ($fnd) {
+                $frontRightTyreState = $this->MapTyreState($frontRight);
+                $this->SendDebug(__FUNCTION__, '... FrontRightTyreState (tyres:data.frontRightTyre.value)=' . $frontRight . '/' . $frontRightTyreState, 0);
+                $this->SaveValue('FrontRightTyreState', $frontRightTyreState, $chg);
+            }
+
+            $rearLeft = $this->GetArrayElem($tyres, 'data.rearLeft.value', '', $fnd);
+            if ($fnd) {
+                $rearLeftTyreState = $this->MapTyreState($rearLeft);
+                $this->SendDebug(__FUNCTION__, '... RearLeftTyreState (tyres:data.rearLeftTyre.value)=' . $rearLeft . '/' . $rearLeftTyreState, 0);
+                $this->SaveValue('RearLeftTyreState', $rearLeftTyreState, $chg);
+            }
+
+            $rearRight = $this->GetArrayElem($tyres, 'data.rearRight.value', '', $fnd);
+            if ($fnd) {
+                $rearRightTyreState = $this->MapTyreState($rearRight);
+                $this->SendDebug(__FUNCTION__, '... RearRightTyreState (tyres:data.rearRightTyre.value)=' . $rearRight . '/' . $rearRightTyreState, 0);
+                $this->SaveValue('RearRightTyreState', $rearRightTyreState, $chg);
+            }
+        }
+
+        $engine_diagnostics = $this->GetApiConnectedVehicle('engine');
+        if ($engine_diagnostics != false) {
+            $this->SendDebug(__FUNCTION__, 'engine_diagnostics=' . print_r($engine_diagnostics, true), 0);
+
+            // UNSPECIFIED, NO_WARNING, SERVICE_REQUIRED, TOO_LOW, TOO_HIGH
+            $oilLevelWarning = $this->GetArrayElem($engine_diagnostics, 'data.oilLevelWarning.value', '', $fnd);
+
+            // UNSPECIFIED, NO_WARNING, TOO_LOW
+            $engineCoolantLevelWarning = $this->GetArrayElem($engine_diagnostics, 'data.engineCoolantLevelWarning.value', '', $fnd);
+        }
+
+        $brakes_diagnostics = $this->GetApiConnectedVehicle('brakes');
+        if ($brakes_diagnostics != false) {
+            $this->SendDebug(__FUNCTION__, 'brakes_diagnostics=' . print_r($brakes_diagnostics, true), 0);
+
+            // UNSPECIFIED, NO_WARNING, TOO_LOW
+            $brakeFluidLevelWarning = $this->GetArrayElem($brakes_diagnostics, 'data.brakeFluidLevelWarning.value', '', $fnd);
+        }
+
+        $diagnostics = $this->GetApiConnectedVehicle('diagnostics');
+        if ($diagnostics != false) {
+            $this->SendDebug(__FUNCTION__, 'diagnostics=' . print_r($diagnostics, true), 0);
+        }
+
+        $warnings = $this->GetApiConnectedVehicle('warnings');
+        if ($warnings != false) {
+            $this->SendDebug(__FUNCTION__, 'warnings=' . print_r($warnings, true), 0);
+        }
+
+        $statistics = $this->GetApiConnectedVehicle('statistics');
+        if ($statistics != false) {
+            $this->SendDebug(__FUNCTION__, 'statistics=' . print_r($statistics, true), 0);
+
+            if ($has_fuel) {
+                $distanceToEmptyTank = $this->GetArrayElem($statistics, 'data.distanceToEmptyTank.value', 0, $fnd);
+                if ($fnd) {
+                    $this->SendDebug(__FUNCTION__, '... RemainingFuelRange (statistics:data.distanceToEmptyTank.value)=' . $distanceToEmptyTank, 0);
+                    $this->SaveValue('RemainingFuelRange', $distanceToEmptyTank, $chg);
+                }
+            }
+
+            if ($has_electric) {
+                $distanceToEmptyBattery = $this->GetArrayElem($statistics, 'data.distanceToEmptyBattery.value', 0, $fnd);
+                if ($fnd) {
+                    $this->SendDebug(__FUNCTION__, '... RemainingElectricRange (statistics:data.distanceToEmptyBattery.value)=' . $distanceToEmptyBattery, 0);
+                    $this->SaveValue('RemainingElectricRange', $distanceToEmptyBattery, $chg);
+                }
+            }
+        }
+
+        if ($has_fuel) {
+            $fuel = $this->GetApiConnectedVehicle('fuel');
+            if ($fuel != false) {
+                $this->SendDebug(__FUNCTION__, 'fuel=' . print_r($fuel, true), 0);
+
+                $fuelAmount = $this->GetArrayElem($fuel, 'data.fuelAmount.value', 0, $fnd);
+                if ($fnd) {
+                    $this->SendDebug(__FUNCTION__, '... FuelAmount (fuel:data.fuelAmount.value)=' . $fuelAmount, 0);
+                    $this->SaveValue('FuelAmount', $fuelAmount, $chg);
+                }
+            }
+        }
+
+        if ($has_electric) {
+            $recharge_status = $this->GetApiEnergy('recharge-status');
+            if ($recharge_status != false) {
+                $this->SendDebug(__FUNCTION__, 'recharge_status=' . print_r($recharge_status, true), 0);
+
+                $batteryChargeLevel = $this->GetArrayElem($recharge_status, 'data.batteryChargeLevel.value', 0, $fnd);
+                if ($fnd) {
+                    $this->SendDebug(__FUNCTION__, '... BatteryChargeLevel (recharge-status:data.batteryChargeLevel.value)=' . $batteryChargeLevel, 0);
+                    $this->SaveValue('BatteryChargeLevel', $batteryChargeLevel, $chg);
+                }
+
+                $chargingConnectionStatus = $this->GetArrayElem($recharge_status, 'data.chargingConnectionStatus.value', '', $fnd);
+                if ($fnd) {
+                    $connectionState = $this->MapConnectionState($chargingConnectionStatus);
+                    $this->SendDebug(__FUNCTION__, '... ConnectionState (recharge-status:data.chargingConnectionStatus.value)=' . $chargingConnectionStatus . '/' . $connectionState, 0);
+                    $this->SaveValue('ConnectionState', $connectionState, $chg);
+                }
+
+                $chargingSystemStatus = $this->GetArrayElem($recharge_status, 'data.chargingSystemStatus.value', '', $fnd);
+                if ($fnd) {
+                    $chargingState = $this->MapChargingState($chargingSystemStatus);
+                    $this->SendDebug(__FUNCTION__, '... ChargingState (recharge-status:data.chargingSystemStatus.value)=' . $chargingSystemStatus . '/' . $chargingState, 0);
+                    $this->SaveValue('ChargingState', $chargingState, $chg);
+                }
+
+                $estimatedChargingTime = $this->GetArrayElem($recharge_status, 'data.estimatedChargingTime.value', 0, $fnd); // minutes
+            }
+        }
+
+        $location = $this->GetApiLocation('location');
+        if ($location != false) {
+            $this->SendDebug(__FUNCTION__, 'location=' . print_r($location, true), 0);
+
+            $longitude = $this->GetArrayElem($location, 'data.geometry.coordinates.0', 0, $fnd);
+            if ($fnd) {
+                $this->SendDebug(__FUNCTION__, '... CurrentLongitude (location:data.geometry.coordinates.0)=' . $longitude, 0);
+                $this->SaveValue('CurrentLongitude', $longitude, $chg);
+            }
+
+            $latitude = $this->GetArrayElem($location, 'data.geometry.coordinates.1', 0, $fnd);
+            if ($fnd) {
+                $this->SendDebug(__FUNCTION__, '... CurrentLatitude (location:data.geometry.coordinates.1)=' . $latitude, 0);
+                $this->SaveValue('CurrentLatitude', $latitude, $chg);
+            }
+
+            $altitude = $this->GetArrayElem($location, 'data.geometry.coordinates.2', 0, $fnd);
+            if ($fnd) {
+                $this->SendDebug(__FUNCTION__, '... CurrentAltitude (location:data.geometry.coordinates.0)=' . $altitude, 0);
+                $this->SaveValue('CurrentAltitude', $altitude, $chg);
+            }
+
+            $heading = $this->GetArrayElem($location, 'data.properties.heading', 0, $fnd);
+            if ($fnd) {
+                $this->SendDebug(__FUNCTION__, '... CurrentDirection (location:data.properties.heading)=' . $heading, 0);
+                $this->SaveValue('CurrentDirection', $heading, $chg);
+            }
+
+            $timestamp = $this->GetArrayElem($location, 'data.properties.timestamp', '', $fnd);
+            if ($fnd) {
+                $ts = strtotime($timestamp);
+                $this->SendDebug(__FUNCTION__, '... LastPositionMessage (location:data.properties.timestamp)=' . $timestamp . '/' . date('d.m.Y H:i:s', $ts), 0);
+                $this->SaveValue('LastPositionMessage', $ts, $chg);
+            }
+        }
 
         $duration = round(microtime(true) - $time_start, 2);
         $this->SendDebug(__FUNCTION__, '... finished in ' . $duration . 's', 0);
