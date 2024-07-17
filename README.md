@@ -53,9 +53,31 @@ alle Funktionen sind über _RequestAction_ der jew. Variablen ansteuerbar
 
 Es werden folgende Variablenprofile angelegt:
 * Boolean<br>
+Volvo.Failure
+
 * Integer<br>
+Volvo.Altitude,
+Volvo.CentralLockState,
+Volvo.ChargingState,
+Volvo.ConnectionState,
+Volvo.DoorState,
+Volvo.EngineState,
+Volvo.Heading,
+Volvo.Mileage,
+Volvo.Minutes,
+Volvo.TyreState,
+Volvo.WindowState
+
 * Float<br>
-* String<br>
+Volvo.BatteryCapacity,
+Volvo.BatteryChargeLevel,
+Volvo.Distance,
+Volvo.EnergyConsumption,
+Volvo.FuelAmount,
+Volvo.FuelConsumption,
+Volvo.Location,
+Volvo.Range,
+Volvo.Speed
 
 ## 6. Anhang
 
@@ -73,5 +95,5 @@ Es werden folgende Variablenprofile angelegt:
 
 ## 7. Versions-Historie
 
-- 0.9 @ 15.07.2024 16:56
+- 0.9 @ 17.07.2024 17:49
   - Initiale Version

@@ -56,7 +56,12 @@ class VolvoIO extends IPSModule
         'energy:electric_range',
         'energy:estimated_charging_time',
         'energy:recharge_status',
-        'vehicle:attributes'
+        'vehicle:attributes',
+
+        // 'conve:battery_charge_level',
+        // 'conve:engine_start_stop',
+        // 'energy:charging_current_limit',
+        // 'energy:target_battery_level',
     ];
 
     private static $semaphoreTM = 5 * 1000;

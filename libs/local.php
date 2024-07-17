@@ -117,6 +117,12 @@ trait VolvoLocalLib
         $this->SendDebug(__FUNCTION__, 'reInstall=' . $this->bool2str($reInstall), 0);
 
         $associations = [
+            ['Wert' => false, 'Name' => $this->Translate('No'), 'Farbe' => -1],
+            ['Wert' => true, 'Name' => $this->Translate('Yes'), 'Farbe' => 0xEE0000],
+        ];
+        $this->CreateVarProfile('Volvo.Failure', VARIABLETYPE_BOOLEAN, '', 0, 0, 0, 0, '', $associations, $reInstall);
+
+        $associations = [
             ['Wert' => self::$VOLVO_ENGINE_STATE_UNKNOWN, 'Name' => $this->Translate('unknown'), 'Farbe' => 0xEE0000],
             ['Wert' => self::$VOLVO_ENGINE_STATE_STOPPED, 'Name' => $this->Translate('stopped'), 'Farbe' => -1],
             ['Wert' => self::$VOLVO_ENGINE_STATE_RUNNING, 'Name' => $this->Translate('running'), 'Farbe' => 0x228B22],
@@ -185,9 +191,12 @@ trait VolvoLocalLib
         $this->CreateVarProfile('Volvo.BatteryCapacity', VARIABLETYPE_FLOAT, ' kWh', 0, 0, 0, 1, '', '', $reInstall);
         $this->CreateVarProfile('Volvo.BatteryChargeLevel', VARIABLETYPE_FLOAT, ' %', 0, 0, 0, 0, '', '', $reInstall);
 
-        /*
-        $this->CreateVarProfile('Volvo.StateofCharge', VARIABLETYPE_FLOAT, ' kWh', 0, 0, 0, 1, '', '', $reInstall);
-         */
+        $this->CreateVarProfile('Volvo.Minutes', VARIABLETYPE_INTEGER, ' min', 0, 0, 0, 0, '', '', $reInstall);
+
+        $this->CreateVarProfile('Volvo.FuelConsumption', VARIABLETYPE_FLOAT, ' l/100km', 0, 0, 0, 1, 'Gauge', '', $reInstall);
+        $this->CreateVarProfile('Volvo.EnergyConsumption', VARIABLETYPE_FLOAT, ' kWh/100km', 0, 0, 0, 1, 'Gauge', '', $reInstall);
+        $this->CreateVarProfile('Volvo.Speed', VARIABLETYPE_FLOAT, ' km/h', 0, 0, 0, 0, 'Gauge', '', $reInstall);
+        $this->CreateVarProfile('Volvo.Distance', VARIABLETYPE_FLOAT, ' km', 0, 0, 0, 1, 'Distance', '', $reInstall);
     }
 
     private function DriveTypeMapping()

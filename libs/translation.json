@@ -1,11 +1,9 @@
 {
 	"translations": {
 		"de": {
-			"__options__": "driveType",
-			"electric": "Elektrisch",
-			"hybrid": "Hybrid",
-			"combustion": "Verbrenner",
-			"Unknown drive type": "unbekannte Antriebsart",
+			"__variableprofile__": "Volvo.Failure",
+			"No": "Nein",
+			"Yes": "Ja",
 
 			"__variableprofile__": "Volvo.EngineStatus",
 			"unknown": "unbekannt",
@@ -50,6 +48,12 @@
 			"very low pressure": "sehr niedriger Druck",
 			"low pressure": "niedriger Druck",
 			"high pressure": "hoher Druck",
+
+			"__options__": "driveType",
+			"electric": "Elektrisch",
+			"hybrid": "Hybrid",
+			"combustion": "Verbrenner",
+			"Unknown drive type": "unbekannte Antriebsart",
 
 			"__status__": "",
 			"Instance is inactive (unauthorized)": "Instanz ist inaktiv (Authorisierung fehlerhaft)",

@@ -117,6 +117,7 @@ class VolvoVehicle extends IPSModule
             $this->MaintainVariable('BatteryChargeLevel', $this->Translate('Battery charge level'), VARIABLETYPE_FLOAT, 'Volvo.BatteryChargeLevel', $vpos++, true);
             $this->MaintainVariable('ConnectionState', $this->Translate('Connection state'), VARIABLETYPE_INTEGER, 'Volvo.ConnectionState', $vpos++, true);
             $this->MaintainVariable('ChargingState', $this->Translate('Charging state'), VARIABLETYPE_INTEGER, 'Volvo.ChargingState', $vpos++, true);
+            $this->MaintainVariable('EstimatedChargingTime', $this->Translate('Estimated charging time'), VARIABLETYPE_INTEGER, 'Volvo.Minutes', $vpos++, true);
         }
 
         $vpos = 30;
@@ -148,6 +149,22 @@ class VolvoVehicle extends IPSModule
         $this->MaintainVariable('CurrentAltitude', $this->Translate('Current altitude'), VARIABLETYPE_INTEGER, 'Volvo.Altitude', $vpos++, true);
         $this->MaintainVariable('CurrentDirection', $this->Translate('Current direction'), VARIABLETYPE_INTEGER, 'Volvo.Heading', $vpos++, true);
         $this->MaintainVariable('LastPositionMessage', $this->Translate('Last position message'), VARIABLETYPE_INTEGER, '~UnixTimestamp', $vpos++, true);
+
+        $vpos = 90;
+        $this->MaintainVariable('DiagnosticInformations', $this->Translate('Diagnostic informations'), VARIABLETYPE_STRING, '~HTMLBox', $vpos++, true);
+        $this->MaintainVariable('HasFailure', $this->Translate('Failures exists'), VARIABLETYPE_BOOLEAN, 'Volvo.Failure', $vpos++, true);
+
+        if ($has_fuel) {
+            $this->MaintainVariable('AverageFuelConsumption', $this->Translate('Average fuel consumption'), VARIABLETYPE_FLOAT, 'Volvo.FuelConsumption', $vpos++, true);
+            $this->MaintainVariable('AverageFuelConsumptionAutomatic', $this->Translate('Average fuel consumption automatic'), VARIABLETYPE_FLOAT, 'Volvo.FuelConsumption', $vpos++, true);
+        }
+        if ($has_electric) {
+            $this->MaintainVariable('AverageEnergyConsumption', $this->Translate('Average energy consumption'), VARIABLETYPE_FLOAT, 'Volvo.EnergyConsumption', $vpos++, true);
+            $this->MaintainVariable('AverageSpeed', $this->Translate('Average speed'), VARIABLETYPE_FLOAT, 'Volvo.Speed', $vpos++, true);
+            $this->MaintainVariable('AverageSpeedAutomatic', $this->Translate('Average speed automatic'), VARIABLETYPE_FLOAT, 'Volvo.Speed', $vpos++, true);
+            $this->MaintainVariable('TripMeterManual', $this->Translate('Trip meter manual'), VARIABLETYPE_FLOAT, 'Volvo.Distance', $vpos++, true);
+            $this->MaintainVariable('TripMeterAutomatic', $this->Translate('Trip meter automatic'), VARIABLETYPE_FLOAT, 'Volvo.Distance', $vpos++, true);
+        }
 
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
@@ -464,40 +481,164 @@ class VolvoVehicle extends IPSModule
             }
         }
 
+        $diagnostics = $this->GetApiConnectedVehicle('diagnostics');
+        if ($diagnostics != false) {
+            $this->SendDebug(__FUNCTION__, 'diagnostics=' . print_r($diagnostics, true), 0);
+        }
+
+        $has_failure = false;
+        $tbl = '';
+        $warnings = $this->GetApiConnectedVehicle('warnings');
+        if ($warnings != false) {
+            $this->SendDebug(__FUNCTION__, 'warnings=' . print_r($warnings, true), 0);
+
+            $entryList = [
+                'brakeLightLeftWarning'           => 'Brake light left',
+                'brakeLightCenterWarning'         => 'Brake light center',
+                'brakeLightRightWarning'          => 'Brake light right',
+                'fogLightFrontWarning'            => 'Fog light front',
+                'fogLightRearWarning'             => 'Fog light rear',
+                'positionLightFrontLeftWarning'   => 'Position light front left',
+                'positionLightFrontRightWarning'  => 'Position light front right',
+                'positionLightRearLeftWarning'    => 'Position light rear left',
+                'positionLightRearRightWarning'   => 'Position light rear right',
+                'highBeamLeftWarning'             => 'High beam left',
+                'highBeamRightWarning'            => 'High beam right',
+                'lowBeamLeftWarning'              => 'Low beam left',
+                'lowBeamRightWarning'             => 'Low beam right',
+                'daytimeRunningLightLeftWarning'  => 'Daytime running light left',
+                'daytimeRunningLightRightWarning' => 'Daytime running light right',
+                'turnIndicationFrontLeftWarning'  => 'Turn indicator front left',
+                'turnIndicationFrontRightWarning' => 'Turn indicator front right',
+                'turnIndicationRearLeftWarning'   => 'Turn indicator rear left',
+                'turnIndicationRearRightWarning'  => 'Turn indicator rear right',
+                'registrationPlateLightWarning'   => 'Rgistration plate light',
+                'sideMarkLightsWarning'           => 'Side mark lights',
+                'hazardLightsWarning'             => 'Hazard lights',
+                'reverseLightsWarning'            => 'Reverse lights',
+            ];
+
+            foreach ($entryList as $key => $txt) {
+                $this->SendDebug(__FUNCTION__, 'key=' . $key . ', txt=' . $txt, 0);
+                $value = $this->GetArrayElem($warnings, 'data.' . $key . '.value', '', $fnd);
+                $timestamp = $this->GetArrayElem($warnings, 'data.' . $key . '.timestamp', '', $fnd);
+                $ts = $fnd ? date('d.m.Y H:i:s', strtotime($timestamp)) : '-';
+                $this->SendDebug(__FUNCTION__, '..... (warnings:data.' . $key . '.value)=' . $value . ', (.timestamp)=' . $timestamp, 0);
+
+                if (in_array($value, ['UNSPECIFIED', ''])) {
+                    continue;
+                }
+                if ($value != 'NO_WARNING') {
+                    $has_failure = true;
+                }
+
+                $tbl .= '<tr>' . PHP_EOL;
+                $tbl .= '<td>' . $this->Translate($txt) . '</td>' . PHP_EOL;
+                $tbl .= '<td>' . $this->Translate($value) . '</td>' . PHP_EOL;
+                $tbl .= '<td>' . $ts . '</td>' . PHP_EOL;
+                $tbl .= '</tr>' . PHP_EOL;
+            }
+        }
+
         $engine_diagnostics = $this->GetApiConnectedVehicle('engine');
         if ($engine_diagnostics != false) {
             $this->SendDebug(__FUNCTION__, 'engine_diagnostics=' . print_r($engine_diagnostics, true), 0);
 
-            // UNSPECIFIED, NO_WARNING, SERVICE_REQUIRED, TOO_LOW, TOO_HIGH
-            $oilLevelWarning = $this->GetArrayElem($engine_diagnostics, 'data.oilLevelWarning.value', '', $fnd);
+            $entryList = [
+                'oilLevelWarning'           => 'Oil level',
+                'engineCoolantLevelWarning' => 'Engine coolant level',
+            ];
 
-            // UNSPECIFIED, NO_WARNING, TOO_LOW
-            $engineCoolantLevelWarning = $this->GetArrayElem($engine_diagnostics, 'data.engineCoolantLevelWarning.value', '', $fnd);
+            foreach ($entryList as $key => $txt) {
+                $this->SendDebug(__FUNCTION__, 'key=' . $key . ', txt=' . $txt, 0);
+                $value = $this->GetArrayElem($engine_diagnostics, 'data.' . $key . '.value', '', $fnd);
+                $timestamp = $this->GetArrayElem($engine_diagnostics, 'data.' . $key . '.timestamp', '', $fnd);
+                $ts = $fnd ? date('d.m.Y H:i:s', strtotime($timestamp)) : '-';
+                $this->SendDebug(__FUNCTION__, '.....  (engine:data.' . $key . '.value)=' . $value . ', (.timestamp)=' . $timestamp, 0);
+
+                if (in_array($value, ['UNSPECIFIED', ''])) {
+                    continue;
+                }
+                if ($value != 'NO_WARNING') {
+                    $has_failure = true;
+                }
+
+                $tbl .= '<tr>' . PHP_EOL;
+                $tbl .= '<td>' . $this->Translate($txt) . '</td>' . PHP_EOL;
+                $tbl .= '<td>' . $this->Translate($value) . '</td>' . PHP_EOL;
+                $tbl .= '<td>' . $ts . '</td>' . PHP_EOL;
+                $tbl .= '</tr>' . PHP_EOL;
+            }
         }
 
         $brakes_diagnostics = $this->GetApiConnectedVehicle('brakes');
         if ($brakes_diagnostics != false) {
             $this->SendDebug(__FUNCTION__, 'brakes_diagnostics=' . print_r($brakes_diagnostics, true), 0);
 
-            // UNSPECIFIED, NO_WARNING, TOO_LOW
-            $brakeFluidLevelWarning = $this->GetArrayElem($brakes_diagnostics, 'data.brakeFluidLevelWarning.value', '', $fnd);
+            $entryList = [
+                'brakeFluidLevelWarning' => 'Brake fluid level',
+            ];
+
+            foreach ($entryList as $key => $txt) {
+                $this->SendDebug(__FUNCTION__, 'key=' . $key . ', txt=' . $txt, 0);
+                $value = $this->GetArrayElem($brakes_diagnostics, 'data.' . $key . '.value', '', $fnd);
+                $timestamp = $this->GetArrayElem($brakes_diagnostics, 'data.' . $key . '.timestamp', '', $fnd);
+                $ts = $fnd ? date('d.m.Y H:i:s', strtotime($timestamp)) : '-';
+                $this->SendDebug(__FUNCTION__, '.....  (brakes:data.' . $key . '.value)=' . $value . ', (.timestamp)=' . $timestamp, 0);
+
+                if (in_array($value, ['UNSPECIFIED', ''])) {
+                    continue;
+                }
+                if ($value != 'NO_WARNING') {
+                    $has_failure = true;
+                }
+
+                $tbl .= '<tr>' . PHP_EOL;
+                $tbl .= '<td>' . $this->Translate($txt) . '</td>' . PHP_EOL;
+                $tbl .= '<td>' . $this->Translate($value) . '</td>' . PHP_EOL;
+                $tbl .= '<td>' . $ts . '</td>' . PHP_EOL;
+                $tbl .= '</tr>' . PHP_EOL;
+            }
         }
 
-        $diagnostics = $this->GetApiConnectedVehicle('diagnostics');
-        if ($diagnostics != false) {
-            $this->SendDebug(__FUNCTION__, 'diagnostics=' . print_r($diagnostics, true), 0);
+        if ($tbl != '') {
+            $html = '<style>' . PHP_EOL;
+            $html .= 'th, td { padding: 2px 10px; text-align: left; }' . PHP_EOL;
+            $html .= '</style>' . PHP_EOL;
+            $html .= '<table>' . PHP_EOL;
+            $html .= '<tr>' . PHP_EOL;
+            $html .= '<th>' . $this->Translate('Diagnostic informations') . '</th>' . PHP_EOL;
+            $html .= '<th>' . $this->Translate('Text') . '</th>' . PHP_EOL;
+            $html .= '<th>' . $this->Translate('Timestamp') . '</th>' . PHP_EOL;
+            $html .= '</tr>' . PHP_EOL;
+            $html .= $tbl;
+            $html .= '</table>' . PHP_EOL;
+        } else {
+            $html = $this->Translate('No diagnostic informations');
         }
 
-        $warnings = $this->GetApiConnectedVehicle('warnings');
-        if ($warnings != false) {
-            $this->SendDebug(__FUNCTION__, 'warnings=' . print_r($warnings, true), 0);
-        }
+        $this->SendDebug(__FUNCTION__, '... DiagnosticInformations=' . $html, 0);
+        $this->SaveValue('DiagnosticInformations', $html, $chg);
+        $this->SendDebug(__FUNCTION__, '... HasFailure=' . $this->bool2str($has_failure), 0);
+        $this->SaveValue('HasFailure', $has_failure, $chg);
 
         $statistics = $this->GetApiConnectedVehicle('statistics');
         if ($statistics != false) {
             $this->SendDebug(__FUNCTION__, 'statistics=' . print_r($statistics, true), 0);
 
             if ($has_fuel) {
+                $averageFuelConsumption = $this->GetArrayElem($statistics, 'data.averageFuelConsumption.value', 0, $fnd);
+                if ($fnd) {
+                    $this->SendDebug(__FUNCTION__, '... AverageFuelConsumption (statistics:data.averageFuelConsumption.value)=' . $averageFuelConsumption, 0);
+                    $this->SaveValue('AverageFuelConsumption', $averageFuelConsumption, $chg);
+                }
+
+                $averageFuelConsumptionAutomatic = $this->GetArrayElem($statistics, 'data.averageFuelConsumptionAutomatic.value', 0, $fnd);
+                if ($fnd) {
+                    $this->SendDebug(__FUNCTION__, '... AverageFuelConsumptionAutomatic (statistics:data.averageFuelConsumptionAutomatic.value)=' . $averageFuelConsumptionAutomatic, 0);
+                    $this->SaveValue('AverageFuelConsumptionAutomatic', $averageFuelConsumptionAutomatic, $chg);
+                }
+
                 $distanceToEmptyTank = $this->GetArrayElem($statistics, 'data.distanceToEmptyTank.value', 0, $fnd);
                 if ($fnd) {
                     $this->SendDebug(__FUNCTION__, '... RemainingFuelRange (statistics:data.distanceToEmptyTank.value)=' . $distanceToEmptyTank, 0);
@@ -506,11 +647,41 @@ class VolvoVehicle extends IPSModule
             }
 
             if ($has_electric) {
+                $averageEnergyConsumption = $this->GetArrayElem($statistics, 'data.averageEnergyConsumption.value', 0, $fnd);
+                if ($fnd) {
+                    $this->SendDebug(__FUNCTION__, '... AverageEnergyConsumption (statistics:data.averageEnergyConsumption.value)=' . $averageEnergyConsumption, 0);
+                    $this->SaveValue('AverageEnergyConsumption', $averageEnergyConsumption, $chg);
+                }
+
                 $distanceToEmptyBattery = $this->GetArrayElem($statistics, 'data.distanceToEmptyBattery.value', 0, $fnd);
                 if ($fnd) {
                     $this->SendDebug(__FUNCTION__, '... RemainingElectricRange (statistics:data.distanceToEmptyBattery.value)=' . $distanceToEmptyBattery, 0);
                     $this->SaveValue('RemainingElectricRange', $distanceToEmptyBattery, $chg);
                 }
+            }
+
+            $averageSpeed = $this->GetArrayElem($statistics, 'data.averageSpeed.value', 0, $fnd);
+            if ($fnd) {
+                $this->SendDebug(__FUNCTION__, '... AverageSpeed (statistics:data.averageSpeed.value)=' . $averageSpeed, 0);
+                $this->SaveValue('AverageSpeed', $averageSpeed, $chg);
+            }
+
+            $averageSpeedAutomatic = $this->GetArrayElem($statistics, 'data.averageSpeedAutomatic.value', 0, $fnd);
+            if ($fnd) {
+                $this->SendDebug(__FUNCTION__, '... AverageSpeedAutomatic (statistics:data.averageSpeedAutomatic.value)=' . $averageSpeedAutomatic, 0);
+                $this->SaveValue('AverageSpeedAutomatic', $averageSpeedAutomatic, $chg);
+            }
+
+            $tripMeterManual = $this->GetArrayElem($statistics, 'data.tripMeterManual.value', 0, $fnd);
+            if ($fnd) {
+                $this->SendDebug(__FUNCTION__, '... TripMeterManual (statistics:data.tripMeterManual.value)=' . $tripMeterManual, 0);
+                $this->SaveValue('TripMeterManual', $tripMeterManual, $chg);
+            }
+
+            $tripMeterAutomatic = $this->GetArrayElem($statistics, 'data.tripMeterAutomatic.value', 0, $fnd);
+            if ($fnd) {
+                $this->SendDebug(__FUNCTION__, '... TripMeterAutomatic (statistics:data.tripMeterAutomatic.value)=' . $tripMeterAutomatic, 0);
+                $this->SaveValue('TripMeterAutomatic', $tripMeterAutomatic, $chg);
             }
         }
 
@@ -553,6 +724,10 @@ class VolvoVehicle extends IPSModule
                 }
 
                 $estimatedChargingTime = $this->GetArrayElem($recharge_status, 'data.estimatedChargingTime.value', 0, $fnd); // minutes
+                if ($fnd) {
+                    $this->SendDebug(__FUNCTION__, '... EstimatedChargingTime (recharge-status:data.estimatedChargingTime.value)=' . $estimatedChargingTime, 0);
+                    $this->SaveValue('EstimatedChargingTime', $estimatedChargingTime, $chg);
+                }
             }
         }
 
