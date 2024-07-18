@@ -83,6 +83,7 @@ class VolvoConfig extends IPSModule
             $vehicles = $dataCache['data']['vehicles'];
             $this->SendDebug(__FUNCTION__, 'vehicles (from cache)=' . print_r($vehicles, true), 0);
         } else {
+            $vehicles = [];
             $SendData = [
                 'DataID'   => '{83DF672B-CA66-5372-A632-E9A5406332A7}', // an VolvoIO
                 'CallerID' => $this->InstanceID,
@@ -91,25 +92,26 @@ class VolvoConfig extends IPSModule
             $data = $this->SendDataToParent(json_encode($SendData));
             $jvehicles = @json_decode($data, true);
             $this->SendDebug(__FUNCTION__, 'jvehicles=' . print_r($jvehicles, true), 0);
-            $vehicles = [];
-            foreach ($jvehicles['data'] as $ent) {
-                $vin = $ent['vin'];
-                $SendData = [
-                    'DataID'   => '{83DF672B-CA66-5372-A632-E9A5406332A7}', // an VolvoIO
-                    'CallerID' => $this->InstanceID,
-                    'Function' => 'GetApiConnectedVehicle',
-                    'vin'      => $vin,
-                    'detail'   => '',
-                ];
-                $data = $this->SendDataToParent(json_encode($SendData));
-                $jvehicle = @json_decode($data, true);
-                $this->SendDebug(__FUNCTION__, 'jvehicle=' . print_r($jvehicle, true), 0);
-                $vehicles[] = $jvehicle['data'];
+            if ($jvehicles != false) {
+                foreach ($jvehicles['data'] as $ent) {
+                    $vin = $ent['vin'];
+                    $SendData = [
+                        'DataID'   => '{83DF672B-CA66-5372-A632-E9A5406332A7}', // an VolvoIO
+                        'CallerID' => $this->InstanceID,
+                        'Function' => 'GetApiConnectedVehicle',
+                        'vin'      => $vin,
+                        'detail'   => '',
+                    ];
+                    $data = $this->SendDataToParent(json_encode($SendData));
+                    $jvehicle = @json_decode($data, true);
+                    $this->SendDebug(__FUNCTION__, 'jvehicle=' . print_r($jvehicle, true), 0);
+                    $vehicles[] = $jvehicle['data'];
+                }
+                if (is_array($vehicles)) {
+                    $dataCache['data']['vehicles'] = $vehicles;
+                }
+                $this->WriteDataCache($dataCache, time());
             }
-            if (is_array($vehicles)) {
-                $dataCache['data']['vehicles'] = $vehicles;
-            }
-            $this->WriteDataCache($dataCache, time());
         }
 
         $guid = '{6C6B7979-37AA-69B7-2E19-7E10D92A97E3}'; // VolvoVehicle

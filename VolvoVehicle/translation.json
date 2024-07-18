@@ -57,6 +57,10 @@
 			"Trip meter manual": "Tageskilometerzähler manuell",
 			"Trip meter automatic": "Tageskilometerzähler automatisch",
 
+			"__map__": "diagnostics",
+			"Service": "Service",
+			"Washer fluid level": "Wischwasserstand",
+
 			"__map__": "warnings",
 			"Brake light left": "Bremslicht links",
 			"Brake light center": "Bremslicht mitte",
@@ -82,22 +86,38 @@
 			"Hazard lights": "Warnblinker",
 			"Reverse lights": "Rückfahrscheinwerfer",
 
+			"__map__": "engine",
 			"Oil level": "Ölstand",
 			"Engine coolant level": "Kühlmittelstand",
 
+			"__map__": "breaks",
 			"Brake fluid level": "Bremsflüssigkeitstand",
 
-			"Diagnostic informations": "Diagnostische Informationen",
+			"Warnings": "Warnungen",
 			"Text": "Text",
 			"Timestamp": "Zeitstempel",
-			"No diagnostic informations": "Keine Diagnoseinformationen",
+			"No warnings": "Keine Warnungen",
 
-			"__map__": "warningtext",
+			"__map__": "warning",
 			"NO_WARNING": "ok",
 			"FAILURE": "Fehler",
 			"SERVICE_REQUIRED": "Service erforderlich",
 			"TOO_LOW": "zu niedrig",
 			"TOO_HIGH": "zu hoch",
+
+			"__map__": "service",
+			"UNSPECIFIED": "nicht angegeben",
+			"NO_WARNING": "keine Warnung",
+			"UNKNOWN_WARNING": "unbekannte Warnung",
+			"REGULAR_MAINTENANCE_ALMOST_TIME_FOR_SERVICE": "reguläre Wartung demnächst erforderlich",
+			"ENGINE_HOURS_ALMOST_TIME_FOR_SERVICE": "Wartung (Motor-Betriebsstunden) demnächst erforderlich",
+			"DISTANCE_DRIVEN_ALMOST_TIME_FOR_SERVICE": "Wartung (Strecke) demnächst erforderlich",
+			"REGULAR_MAINTENANCE_TIME_FOR_SERVICE": "reguläre Wartung erforderlich",
+			"ENGINE_HOURS_TIME_FOR_SERVICE": "Wartung (Motor-Betriebsstunden) erforderlich",
+			"DISTANCE_DRIVEN_TIME_FOR_SERVICE": "Wartung (Strecke) erforderlich",
+			"REGULAR_MAINTENANCE_OVERDUE_FOR_SERVICE": "reguläre Wartung überfällig",
+			"ENGINE_HOURS_OVERDUE_FOR_SERVICE": "Wartung (Motor-Betriebsstunden) überfällig",
+			"DISTANCE_DRIVEN_OVERDUE_FOR_SERVICE": "Wartung (Strecke) überfällig",
 
 			"__messages__": "",
 			"Instance has no active gateway": "Instanz hat keinen aktiven Gateway",
@@ -108,12 +128,26 @@
 			"__end__": ""
 		},
 		"en": {
-			"__map__": "warningtext",
+			"__map__": "warning",
 			"NO_WARNING": "ok",
 			"FAILURE": "Failure",
 			"SERVICE_REQUIRED": "Service required",
 			"TOO_LOW": "too low",
 			"TOO_HIGH": "too high",
+
+			"__map__": "service",
+			"UNSPECIFIED": "Unspecified",
+			"NO_WARNING": "No warning",
+			"UNKNOWN_WARNING": "Unknown warning",
+			"REGULAR_MAINTENANCE_ALMOST_TIME_FOR_SERVICE": "Regular maintenance required soon",
+			"ENGINE_HOURS_ALMOST_TIME_FOR_SERVICE": "Maintenance (engine operating hours) required soon",
+			"DISTANCE_DRIVEN_ALMOST_TIME_FOR_SERVICE": "Maintenance (distance) required soon",
+			"REGULAR_MAINTENANCE_TIME_FOR_SERVICE": "Regular maintenance required",
+			"ENGINE_HOURS_TIME_FOR_SERVICE": "Maintenance (engine operating hours) required",
+			"DISTANCE_DRIVEN_TIME_FOR_SERVICE": "Maintenance (distance) required",
+			"REGULAR_MAINTENANCE_OVERDUE_FOR_SERVICE": "Regular maintenance overdue",
+			"ENGINE_HOURS_OVERDUE_FOR_SERVICE": "Maintenance (engine operating hours) overdue",
+			"DISTANCE_DRIVEN_OVERDUE_FOR_SERVICE": "Maintenance (distance) overdue",
 
 			"__end__": ""
 		}

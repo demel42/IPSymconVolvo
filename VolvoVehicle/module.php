@@ -151,7 +151,7 @@ class VolvoVehicle extends IPSModule
         $this->MaintainVariable('LastPositionMessage', $this->Translate('Last position message'), VARIABLETYPE_INTEGER, '~UnixTimestamp', $vpos++, true);
 
         $vpos = 90;
-        $this->MaintainVariable('DiagnosticInformations', $this->Translate('Diagnostic informations'), VARIABLETYPE_STRING, '~HTMLBox', $vpos++, true);
+        $this->MaintainVariable('Warnings', $this->Translate('Warnings'), VARIABLETYPE_STRING, '~HTMLBox', $vpos++, true);
         $this->MaintainVariable('HasFailure', $this->Translate('Failures exists'), VARIABLETYPE_BOOLEAN, 'Volvo.Failure', $vpos++, true);
 
         if ($has_fuel) {
@@ -160,11 +160,11 @@ class VolvoVehicle extends IPSModule
         }
         if ($has_electric) {
             $this->MaintainVariable('AverageEnergyConsumption', $this->Translate('Average energy consumption'), VARIABLETYPE_FLOAT, 'Volvo.EnergyConsumption', $vpos++, true);
-            $this->MaintainVariable('AverageSpeed', $this->Translate('Average speed'), VARIABLETYPE_FLOAT, 'Volvo.Speed', $vpos++, true);
-            $this->MaintainVariable('AverageSpeedAutomatic', $this->Translate('Average speed automatic'), VARIABLETYPE_FLOAT, 'Volvo.Speed', $vpos++, true);
-            $this->MaintainVariable('TripMeterManual', $this->Translate('Trip meter manual'), VARIABLETYPE_FLOAT, 'Volvo.Distance', $vpos++, true);
-            $this->MaintainVariable('TripMeterAutomatic', $this->Translate('Trip meter automatic'), VARIABLETYPE_FLOAT, 'Volvo.Distance', $vpos++, true);
         }
+        $this->MaintainVariable('AverageSpeed', $this->Translate('Average speed'), VARIABLETYPE_FLOAT, 'Volvo.Speed', $vpos++, true);
+        $this->MaintainVariable('TripMeterManual', $this->Translate('Trip meter manual'), VARIABLETYPE_FLOAT, 'Volvo.Distance', $vpos++, true);
+        $this->MaintainVariable('AverageSpeedAutomatic', $this->Translate('Average speed automatic'), VARIABLETYPE_FLOAT, 'Volvo.Speed', $vpos++, true);
+        $this->MaintainVariable('TripMeterAutomatic', $this->Translate('Trip meter automatic'), VARIABLETYPE_FLOAT, 'Volvo.Distance', $vpos++, true);
 
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
@@ -481,13 +481,55 @@ class VolvoVehicle extends IPSModule
             }
         }
 
+        $has_failure = false;
+        $tbl = '';
+
+        /*
+            18.07.2024, 10:50:41 |         UpdateStatus | diagnostics=Array (
+                [data] => Array
+                    (
+                        [serviceWarning] => Array ( [value] => NO_WARNING [timestamp] => 2024-07-17T15:06:17.904Z)
+                        [engineHoursToService] => Array ( [value] => 648 [unit] => h [timestamp] => 2024-07-17T15:06:17.904Z)
+                        [distanceToService] => Array ( [value] => 29896 [unit] => km [timestamp] => 2024-07-17T15:06:17.904Z)
+                        [timeToService] => Array ( [value] => 11 [unit] => months [timestamp] => 2024-07-17T15:06:17.904Z)
+
+                    )
+
+            )
+         */
         $diagnostics = $this->GetApiConnectedVehicle('diagnostics');
         if ($diagnostics != false) {
             $this->SendDebug(__FUNCTION__, 'diagnostics=' . print_r($diagnostics, true), 0);
+
+            $entryList = [
+                'serviceWarning'          => 'Service',
+                'washerFluidLevelWarning' => 'Washer fluid level',
+            ];
+
+            foreach ($entryList as $key => $txt) {
+                $value = $this->GetArrayElem($diagnostics, 'data.' . $key . '.value', '', $fnd);
+                if ($fnd == false) {
+                    continue;
+                }
+                $timestamp = $this->GetArrayElem($diagnostics, 'data.' . $key . '.timestamp', '', $fnd);
+                $ts = $fnd ? date('d.m.Y H:i:s', strtotime($timestamp)) : '-';
+                $this->SendDebug(__FUNCTION__, '..... (diagnostics:data.' . $key . '.value)=' . $value . ', (.timestamp)=' . $timestamp, 0);
+
+                if (in_array($value, ['UNSPECIFIED', ''])) {
+                    continue;
+                }
+                if ($value != 'NO_WARNING') {
+                    $has_failure = true;
+                }
+
+                $tbl .= '<tr>' . PHP_EOL;
+                $tbl .= '<td>' . $this->Translate($txt) . '</td>' . PHP_EOL;
+                $tbl .= '<td>' . $this->Translate($value) . '</td>' . PHP_EOL;
+                $tbl .= '<td>' . $ts . '</td>' . PHP_EOL;
+                $tbl .= '</tr>' . PHP_EOL;
+            }
         }
 
-        $has_failure = false;
-        $tbl = '';
         $warnings = $this->GetApiConnectedVehicle('warnings');
         if ($warnings != false) {
             $this->SendDebug(__FUNCTION__, 'warnings=' . print_r($warnings, true), 0);
@@ -519,8 +561,10 @@ class VolvoVehicle extends IPSModule
             ];
 
             foreach ($entryList as $key => $txt) {
-                $this->SendDebug(__FUNCTION__, 'key=' . $key . ', txt=' . $txt, 0);
                 $value = $this->GetArrayElem($warnings, 'data.' . $key . '.value', '', $fnd);
+                if ($fnd == false) {
+                    continue;
+                }
                 $timestamp = $this->GetArrayElem($warnings, 'data.' . $key . '.timestamp', '', $fnd);
                 $ts = $fnd ? date('d.m.Y H:i:s', strtotime($timestamp)) : '-';
                 $this->SendDebug(__FUNCTION__, '..... (warnings:data.' . $key . '.value)=' . $value . ', (.timestamp)=' . $timestamp, 0);
@@ -550,8 +594,10 @@ class VolvoVehicle extends IPSModule
             ];
 
             foreach ($entryList as $key => $txt) {
-                $this->SendDebug(__FUNCTION__, 'key=' . $key . ', txt=' . $txt, 0);
                 $value = $this->GetArrayElem($engine_diagnostics, 'data.' . $key . '.value', '', $fnd);
+                if ($fnd == false) {
+                    continue;
+                }
                 $timestamp = $this->GetArrayElem($engine_diagnostics, 'data.' . $key . '.timestamp', '', $fnd);
                 $ts = $fnd ? date('d.m.Y H:i:s', strtotime($timestamp)) : '-';
                 $this->SendDebug(__FUNCTION__, '.....  (engine:data.' . $key . '.value)=' . $value . ', (.timestamp)=' . $timestamp, 0);
@@ -582,6 +628,9 @@ class VolvoVehicle extends IPSModule
             foreach ($entryList as $key => $txt) {
                 $this->SendDebug(__FUNCTION__, 'key=' . $key . ', txt=' . $txt, 0);
                 $value = $this->GetArrayElem($brakes_diagnostics, 'data.' . $key . '.value', '', $fnd);
+                if ($fnd == false) {
+                    continue;
+                }
                 $timestamp = $this->GetArrayElem($brakes_diagnostics, 'data.' . $key . '.timestamp', '', $fnd);
                 $ts = $fnd ? date('d.m.Y H:i:s', strtotime($timestamp)) : '-';
                 $this->SendDebug(__FUNCTION__, '.....  (brakes:data.' . $key . '.value)=' . $value . ', (.timestamp)=' . $timestamp, 0);
@@ -607,18 +656,18 @@ class VolvoVehicle extends IPSModule
             $html .= '</style>' . PHP_EOL;
             $html .= '<table>' . PHP_EOL;
             $html .= '<tr>' . PHP_EOL;
-            $html .= '<th>' . $this->Translate('Diagnostic informations') . '</th>' . PHP_EOL;
+            $html .= '<th>' . $this->Translate('Warnings') . '</th>' . PHP_EOL;
             $html .= '<th>' . $this->Translate('Text') . '</th>' . PHP_EOL;
             $html .= '<th>' . $this->Translate('Timestamp') . '</th>' . PHP_EOL;
             $html .= '</tr>' . PHP_EOL;
             $html .= $tbl;
             $html .= '</table>' . PHP_EOL;
         } else {
-            $html = $this->Translate('No diagnostic informations');
+            $html = $this->Translate('No warnings');
         }
 
-        $this->SendDebug(__FUNCTION__, '... DiagnosticInformations=' . $html, 0);
-        $this->SaveValue('DiagnosticInformations', $html, $chg);
+        $this->SendDebug(__FUNCTION__, '... Warnings=' . $html, 0);
+        $this->SaveValue('Warnings', $html, $chg);
         $this->SendDebug(__FUNCTION__, '... HasFailure=' . $this->bool2str($has_failure), 0);
         $this->SaveValue('HasFailure', $has_failure, $chg);
 
