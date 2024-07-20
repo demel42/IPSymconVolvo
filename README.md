@@ -16,6 +16,9 @@
 
 ## 1. Funktionsumfang
 
+Volvo bietet für bestimmte Modelle eine Kommunikation via Internet/Volvo-Cloud an: ([Volvo Cars API](https://developer.volvocars.com)), diese steht nur für bestimmte Modelle zur Vefüdung ([siehe hier](https://developer.volvocars.com/apis/connected-vehicle/v2/overview/#availability)).
+
+Realisiert ist der Datenabruf alle verfügbarer Daaten; Steuerungsfunktionen des Fahrzeugs sind nicht implementiert.
 ## 2. Voraussetzungen
 
 - IP-Symcon ab Version 6.0
@@ -31,18 +34,44 @@ Alternativ kann das Modul über [Module Control](https://www.symcon.de/service/d
 
 ## 4. Funktionsreferenz
 
-alle Funktionen sind über _RequestAction_ der jew. Variablen ansteuerbar
+es gibt keine auslösbaren Funktionen
 
 ## 5. Konfiguration
 
-### Volvo Vehicle
+### a. VolvoIO
 
-#### Properties
+#### Einstellungen
 
-| Eigenschaft               | Typ      | Standardwert | Beschreibung |
-| :------------------------ | :------  | :----------- | :----------- |
-| Instanz deaktivieren      | boolean  | false        | Instanz temporär deaktivieren |
-|                           |          |              | |
+| Eigenschaft             | Typ     | Standardwert | Beschreibung |
+| :---------------------- | :------ | :----------- | :----------- |
+| Instanz deaktivieren    | boolean | false        | Instanz temporär deaktivieren |
+|                         |         |              | |
+| Verbindugstyp           | integer | 0            | Auswahl der Art der Verbindung (**OAuth** oder **Developer**) |
+|                         |         |              | |
+| - nur bei _Developer_ - |         |              | |
+| Benutzername            | string  |              | Volvo-Konto: Benutzerkennung |
+| Passwort                | string  |              | Volvo-Konto: Passwort |
+| VCC API Key             | string  |              | Schlüssel der Volvo-API Application |
+
+#### Aktionen
+
+| Bezeichnung   | Beschreibung |
+| :------------ | :----------- |
+| Zugang prüfen | Prüft, ob die Angaben korrekt sind |
+
+### b. VolvoConfig
+
+keine Einstellungen
+
+### c. VolvoVehicle
+
+#### Einstellungen
+
+| Eigenschaft               | Typ     | Standardwert | Beschreibung |
+| :------------------------ | :------ | :----------- | :----------- |
+| Instanz deaktivieren      | boolean | false        | Instanz temporär deaktivieren |
+|                           |         |              | |
+| Aktualisierungsintervall  | integer | 0            | Aktualisierungsintervall in Sekunden |
 
 #### Aktionen
 
@@ -95,5 +124,5 @@ Volvo.Speed
 
 ## 7. Versions-Historie
 
-- 0.9 @ 18.07.2024 17:34
+- 0.9 @ 20.07.2024 17:45
   - Initiale Version

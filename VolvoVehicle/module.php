@@ -38,6 +38,8 @@ class VolvoVehicle extends IPSModule
         $this->RegisterAttributeString('UpdateInfo', json_encode([]));
         $this->RegisterAttributeString('ModuleStats', json_encode([]));
 
+        $this->SetBuffer('VehicleData', json_encode([]));
+
         $this->InstallVarProfiles(false);
 
         $this->RegisterTimer('UpdateStatus', 0, 'IPS_RequestAction(' . $this->InstanceID . ', "UpdateStatus", "");');
@@ -156,15 +158,15 @@ class VolvoVehicle extends IPSModule
 
         if ($has_fuel) {
             $this->MaintainVariable('AverageFuelConsumption', $this->Translate('Average fuel consumption'), VARIABLETYPE_FLOAT, 'Volvo.FuelConsumption', $vpos++, true);
-            $this->MaintainVariable('AverageFuelConsumptionAutomatic', $this->Translate('Average fuel consumption automatic'), VARIABLETYPE_FLOAT, 'Volvo.FuelConsumption', $vpos++, true);
+            $this->MaintainVariable('AverageFuelConsumptionAutomatic', $this->Translate('Average fuel consumption (TA)'), VARIABLETYPE_FLOAT, 'Volvo.FuelConsumption', $vpos++, true);
         }
         if ($has_electric) {
             $this->MaintainVariable('AverageEnergyConsumption', $this->Translate('Average energy consumption'), VARIABLETYPE_FLOAT, 'Volvo.EnergyConsumption', $vpos++, true);
         }
         $this->MaintainVariable('AverageSpeed', $this->Translate('Average speed'), VARIABLETYPE_FLOAT, 'Volvo.Speed', $vpos++, true);
-        $this->MaintainVariable('TripMeterManual', $this->Translate('Trip meter manual'), VARIABLETYPE_FLOAT, 'Volvo.Distance', $vpos++, true);
-        $this->MaintainVariable('AverageSpeedAutomatic', $this->Translate('Average speed automatic'), VARIABLETYPE_FLOAT, 'Volvo.Speed', $vpos++, true);
-        $this->MaintainVariable('TripMeterAutomatic', $this->Translate('Trip meter automatic'), VARIABLETYPE_FLOAT, 'Volvo.Distance', $vpos++, true);
+        $this->MaintainVariable('TripMeterManual', $this->Translate('Trip meter'), VARIABLETYPE_FLOAT, 'Volvo.Distance', $vpos++, true);
+        $this->MaintainVariable('AverageSpeedAutomatic', $this->Translate('Average speed (TA)'), VARIABLETYPE_FLOAT, 'Volvo.Speed', $vpos++, true);
+        $this->MaintainVariable('TripMeterAutomatic', $this->Translate('Trip meter (TA)'), VARIABLETYPE_FLOAT, 'Volvo.Distance', $vpos++, true);
 
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
@@ -215,7 +217,7 @@ class VolvoVehicle extends IPSModule
         $formElements[] = [
             'type'    => 'NumberSpinner',
             'name'    => 'update_interval',
-            'suffix'  => 'Seconds',
+            'suffix'  => 'Minutes',
             'minimum' => 0,
             'caption' => 'Update interval',
         ];
@@ -248,14 +250,46 @@ class VolvoVehicle extends IPSModule
             'onClick' => 'IPS_RequestAction($id, "UpdateStatus", "");',
         ];
 
-        $formActions[] = [
-            'type'      => 'ExpansionPanel',
-            'caption'   => 'Expert area',
-            'expanded'  => false,
-            'items'     => [
-                $this->GetInstallVarProfilesFormItem(),
-            ],
-        ];
+        $vehicleData = @json_decode($this->GetBuffer('VehicleData'), true);
+        if ($vehicleData != false) {
+            $items = [];
+            foreach ($vehicleData['commands'] as $command) {
+                switch ($command) {
+                    case 'LOCK':
+                        $items[] = [
+                            'type'    => 'Button',
+                            'caption' => 'Lock doors',
+                            'onClick' => 'IPS_RequestAction($id, "LockDoors", "");',
+                        ];
+                        break;
+                    case 'UNLOCK':
+                        $items[] = [
+                            'type'    => 'Button',
+                            'caption' => 'Unlock doors',
+                            'onClick' => 'IPS_RequestAction($id, "UnlockDoors", "");',
+                        ];
+                        break;
+                    case 'CLIMATIZATION_START':
+                        $items[] = [
+                            'type'    => 'Button',
+                            'caption' => 'Start climatization',
+                            'onClick' => 'IPS_RequestAction($id, "StartClimatization", "");',
+                        ];
+                        break;
+                    case 'CLIMATIZATION_STOP':
+                        $items[] = [
+                            'type'    => 'Button',
+                            'caption' => 'Stop climatization',
+                            'onClick' => 'IPS_RequestAction($id, "StopClimatization", "");',
+                        ];
+                        break;
+                }
+            }
+            $formActions[] = [
+                'type'    => 'RowLayout',
+                'items'   => $items,
+            ];
+        }
 
         $formActions[] = [
             'type'      => 'ExpansionPanel',
@@ -274,12 +308,12 @@ class VolvoVehicle extends IPSModule
         return $formActions;
     }
 
-    private function SetUpdateInterval(int $sec = null)
+    private function SetUpdateInterval(int $min = null)
     {
-        if ($sec == '') {
-            $sec = $this->ReadPropertyInteger('update_interval');
+        if ($min == '') {
+            $min = $this->ReadPropertyInteger('update_interval');
         }
-        $this->MaintainTimer('UpdateStatus', $sec * 1000);
+        $this->MaintainTimer('UpdateStatus', $min * 60 * 1000);
     }
 
     private function UpdateStatus()
@@ -306,22 +340,39 @@ class VolvoVehicle extends IPSModule
         $fnd = false;
         $chg = false;
 
-        $vehicle = $this->GetApiConnectedVehicle();
-        if ($vehicle != false) {
-            $this->SendDebug(__FUNCTION__, 'vehicle=' . print_r($vehicle, true), 0);
-
-            $model = $this->GetArrayElem($vehicle, 'data.descriptions.model', '');
-            $year = $this->GetArrayElem($vehicle, 'data.modelYear', '');
-            $summary = $model . ' (' . $year . ')';
-            $this->SetSummary($summary);
-
-            if ($has_electric) {
-                $batteryCapacityKWH = $this->GetArrayElem($vehicle, 'data.batteryCapacityKWH', 0, $fnd);
-                if ($fnd) {
-                    $this->SendDebug(__FUNCTION__, '... BatteryCapacity (vehicle:data.batteryCapacityKWH)=' . $batteryCapacityKWH, 0);
-                    $this->SaveValue('BatteryCapacity', $batteryCapacityKWH, $chg);
+        $vehicleData = @json_decode($this->GetBuffer('VehicleData'), true);
+        if ($vehicleData == false) {
+            $vehicleData = [];
+            $commands = $this->GetApiConnectedVehicle('commands');
+            if ($commands != false) {
+                $this->SendDebug(__FUNCTION__, 'command=' . print_r($commands, true), 0);
+                $cmds = [];
+                foreach ($commands['data'] as $c) {
+                    $cmds[] = $c['command'];
                 }
+                $vehicleData['commands'] = $cmds;
             }
+
+            $vehicle = $this->GetApiConnectedVehicle();
+            if ($vehicle != false) {
+                $this->SendDebug(__FUNCTION__, 'vehicle=' . print_r($vehicle, true), 0);
+
+                $model = $this->GetArrayElem($vehicle, 'data.descriptions.model', '');
+                $year = $this->GetArrayElem($vehicle, 'data.modelYear', '');
+                $summary = $model . ' (' . $year . ')';
+                $this->SetSummary($summary);
+
+                if ($has_electric) {
+                    $batteryCapacityKWH = $this->GetArrayElem($vehicle, 'data.batteryCapacityKWH', 0, $fnd);
+                    if ($fnd) {
+                        $this->SendDebug(__FUNCTION__, '... BatteryCapacity (vehicle:data.batteryCapacityKWH)=' . $batteryCapacityKWH, 0);
+                        $this->SaveValue('BatteryCapacity', $batteryCapacityKWH, $chg);
+                    }
+                }
+                $vehicleData['basics'] = $vehicle['data'];
+            }
+            $this->SetBuffer('VehicleData', json_encode($vehicleData));
+            $this->SendDebug(__FUNCTION__, 'VehicleData=' . print_r($vehicleData, true), 0);
         }
 
         $odometer = $this->GetApiConnectedVehicle('odometer');
@@ -484,19 +535,6 @@ class VolvoVehicle extends IPSModule
         $has_failure = false;
         $tbl = '';
 
-        /*
-            18.07.2024, 10:50:41 |         UpdateStatus | diagnostics=Array (
-                [data] => Array
-                    (
-                        [serviceWarning] => Array ( [value] => NO_WARNING [timestamp] => 2024-07-17T15:06:17.904Z)
-                        [engineHoursToService] => Array ( [value] => 648 [unit] => h [timestamp] => 2024-07-17T15:06:17.904Z)
-                        [distanceToService] => Array ( [value] => 29896 [unit] => km [timestamp] => 2024-07-17T15:06:17.904Z)
-                        [timeToService] => Array ( [value] => 11 [unit] => months [timestamp] => 2024-07-17T15:06:17.904Z)
-
-                    )
-
-            )
-         */
         $diagnostics = $this->GetApiConnectedVehicle('diagnostics');
         if ($diagnostics != false) {
             $this->SendDebug(__FUNCTION__, 'diagnostics=' . print_r($diagnostics, true), 0);
@@ -829,6 +867,18 @@ class VolvoVehicle extends IPSModule
             case 'UpdateStatus':
                 $this->UpdateStatus();
                 break;
+            case 'LockDoors':
+                $r = $this->LockDoors();
+                break;
+            case 'UnlockDoors':
+                $r = $this->UnlockDoors();
+                break;
+            case 'StartClimatization':
+                $r = $this->StartClimatization();
+                break;
+            case 'StopClimatization':
+                $r = $this->StopClimatization();
+                break;
             default:
                 $r = false;
                 break;
@@ -878,6 +928,82 @@ class VolvoVehicle extends IPSModule
             'Function' => 'GetApiConnectedVehicle',
             'vin'      => $vin,
             'detail'   => $detail,
+        ];
+        $data = $this->SendDataToParent(json_encode($SendData));
+        $this->SendDebug(__FUNCTION__, 'SendData=' . json_encode($SendData) . ', data=' . $data, 0);
+        $jdata = @json_decode($data, true);
+        $this->SendDebug(__FUNCTION__, 'jdata=' . print_r($jdata, true), 0);
+        return $jdata;
+    }
+
+    public function LockDoors()
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return false;
+        }
+
+        $this->SendDebug(__FUNCTION__, 'call api ...', 0);
+        $r = $this->PostApiConnectedVehicle('commands/lock', []);
+        $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
+        return true;
+    }
+
+    public function UnlockDoors()
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return false;
+        }
+
+        $this->SendDebug(__FUNCTION__, 'call api ...', 0);
+        $r = $this->PostApiConnectedVehicle('commands/unlock', ['unlockDuration' => 120]);
+        $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
+        return true;
+    }
+
+    public function StartClimatization()
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return false;
+        }
+
+        $this->SendDebug(__FUNCTION__, 'call api ...', 0);
+        $r = $this->PostApiConnectedVehicle('commands/climatization-start', []);
+        $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
+        return true;
+    }
+
+    public function StopClimatization()
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return false;
+        }
+
+        $this->SendDebug(__FUNCTION__, 'call api ...', 0);
+        $r = $this->PostApiConnectedVehicle('commands/climatization-stop', []);
+        $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
+        return true;
+    }
+
+    private function PostApiConnectedVehicle($detail = '', $postfields = [])
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return;
+        }
+
+        $vin = $this->ReadPropertyString('vin');
+
+        $SendData = [
+            'DataID'       => '{83DF672B-CA66-5372-A632-E9A5406332A7}', // an VolvoIO
+            'CallerID'     => $this->InstanceID,
+            'Function'     => 'PostApiConnectedVehicle',
+            'vin'          => $vin,
+            'detail'       => $detail,
+            'postfields'   => $postfields,
         ];
         $data = $this->SendDataToParent(json_encode($SendData));
         $this->SendDebug(__FUNCTION__, 'SendData=' . json_encode($SendData) . ', data=' . $data, 0);

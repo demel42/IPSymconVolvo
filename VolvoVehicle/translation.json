@@ -11,7 +11,7 @@
             "mode of driving": "Antriebsart",
 
 			"Update interval": "Aktualisierungsintervall",
-			"Seconds": "Sekunden",
+			"Minutes": "Minuten",
 
 			"Generate message when the gateway is inactive": "Meldung erzeugen wenn der Gateway inaktiv ist",
 
@@ -50,12 +50,12 @@
 			"Last position message": "Letzte Positionsmeldung",
 			"Failures exists": "Fehler liegt vor",
 			"Average fuel consumption": "Durchschnittlicher Kraftstoffverbrauch",
-			"Average fuel consumption automatic": "Durchschnittlicher Kraftstoffverbrauch automatisch",
+			"Average fuel consumption (TA)": "Durchschnittlicher Kraftstoffverbrauch (TA)",
 			"Average energy consumption": "Durchschnittlicher Energieverbrauch",
 			"Average speed": "Durchschnittliche Geschwindigkeit",
-			"Average speed automatic": "Durchschnittsgeschwindigkeit automatisch",
-			"Trip meter manual": "Tageskilometerzähler manuell",
-			"Trip meter automatic": "Tageskilometerzähler automatisch",
+			"Average speed (TA)": "Durchschnittsgeschwindigkeit (TA)",
+			"Trip meter": "Tageskilometerzähler",
+			"Trip meter (TA)": "Tageskilometerzähler (TA)",
 
 			"__map__": "diagnostics",
 			"Service": "Service",
@@ -124,6 +124,10 @@
 
 			"__actions__": "",
 			"Update status": "Aktualisiere Status",
+			"Lock doors": "Türen versperren",
+			"Unlock doors": "Türen entsperren",
+			"Start climatization": "Klimatisierung starten",
+			"Stop climatization": "Klimatisierung stoppen",
 
 			"__end__": ""
 		},

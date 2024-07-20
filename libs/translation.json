@@ -8,7 +8,7 @@
 			"__variableprofile__": "Volvo.EngineStatus",
 			"unknown": "unbekannt",
 			"stopped": "gestoppt",
-			"running": "läuft",
+			"running": "in Betrieb",
 
 			"__variableprofile__": "Volvo.ConnectionStatus",
 			"unspecified": "unbekannt",

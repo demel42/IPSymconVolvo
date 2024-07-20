@@ -105,7 +105,6 @@ class VolvoIO extends IPSModule
 
         $this->SetBuffer('ApiAccessToken', json_encode([]));
         $this->SetBuffer('ConnectionType', '');
-        $this->SetBuffer('LastApiCall', 0);
 
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
     }
@@ -121,16 +120,20 @@ class VolvoIO extends IPSModule
                 $r[] = $this->Translate('Connection type must be set');
                 break;
             case self::$CONNECTION_DEVELOPER:
+                $username = $this->ReadPropertyString('username');
+                if ($username == '') {
+                    $this->SendDebug(__FUNCTION__, '"userid" is needed', 0);
+                    $r[] = $this->Translate('Username of the Volvo account must be specified');
+                }
+                $password = $this->ReadPropertyString('password');
+                if ($password == '') {
+                    $this->SendDebug(__FUNCTION__, '"password" is needed', 0);
+                    $r[] = $this->Translate('Password of the Volvo account must be specified');
+                }
                 $vcc_api_key = $this->ReadPropertyString('vcc_api_key');
                 if ($vcc_api_key == '') {
                     $this->SendDebug(__FUNCTION__, '"vcc_api_key" is needed', 0);
-                    $r[] = $this->Translate('\'VCC api key\' must be specified');
-                }
-                $username = $this->ReadPropertyString('username');
-                $password = $this->ReadPropertyString('password');
-                if ($username == '' || $password == '') {
-                    $this->SendDebug(__FUNCTION__, '"username" and/or "password" is empty', 0);
-                    $r[] = $this->Translate('Username and password of the Volvo account are required');
+                    $r[] = $this->Translate('\'VCC api key\' of the Volvo-API application must be specified');
                 }
                 break;
             default:
@@ -161,17 +164,20 @@ class VolvoIO extends IPSModule
             return;
         }
 
-        $apiLimits = [
-            [
-                'value' => 10000,
-                'unit'  => 'day',
-            ],
-        ];
-        $this->ApiCallSetInfo($apiLimits, '');
-
         $vpos = 1000;
         $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
         $this->MaintainMedia('ApiCallStats', $this->Translate('API call statistics'), MEDIATYPE_DOCUMENT, '.txt', false, $vpos++, $collectApiCallStats);
+
+        if ($collectApiCallStats) {
+            $apiLimits = [
+                [
+                    'value' => 10000,
+                    'unit'  => 'day',
+                ],
+            ];
+            $apiNotes = '';
+            $this->ApiCallSetInfo($apiLimits, $apiNotes);
+        }
 
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
@@ -976,6 +982,9 @@ class VolvoIO extends IPSModule
                 case 'GetApiConnectedVehicle':
                     $ret = $this->GetApiConnectedVehicle($jdata['vin'], $jdata['detail']);
                     break;
+                case 'PostApiConnectedVehicle':
+                    $ret = $this->PostApiConnectedVehicle($jdata['vin'], $jdata['detail'], $jdata['postfields']);
+                    break;
                 case 'GetApiEnergy':
                     $ret = $this->GetApiEnergy($jdata['vin'], $jdata['detail']);
                     break;
@@ -1132,6 +1141,31 @@ class VolvoIO extends IPSModule
         ];
 
         $body = $this->do_HttpRequest($uri, [], $headerfields, [], 'GET');
+        return $body;
+    }
+
+    private function PostApiConnectedVehicle($vin, $detail, $postfields)
+    {
+        $vcc_api_key = $this->ReadPropertyString('vcc_api_key');
+
+        $access_token = $this->GetApiAccessToken();
+        if ($access_token == false) {
+            return false;
+        }
+
+        $uri = 'connected-vehicle/v2/vehicles/' . $vin;
+        if ($detail != '') {
+            $uri .= '/' . $detail;
+        }
+
+		return false;
+        $headerfields = [
+            'Accept'        => 'application/json',
+            'Authorization' => 'Bearer ' . $access_token,
+            'vcc-api-key'   => $vcc_api_key,
+        ];
+
+        $body = $this->do_HttpRequest($uri, [], $headerfields, $postfields, 'POST');
         return $body;
     }
 

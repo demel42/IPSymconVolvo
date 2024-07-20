@@ -243,7 +243,7 @@ trait VolvoLocalLib
         $str2enum = [
             'UNKNOWN' => self::$VOLVO_ENGINE_STATE_UNKNOWN,
             'STOPPED' => self::$VOLVO_ENGINE_STATE_STOPPED,
-            'RUNNING' => self::$VOLVO_ENGINE_STATE_UNKNOWN,
+            'RUNNING' => self::$VOLVO_ENGINE_STATE_RUNNING,
         ];
 
         if (isset($str2enum[$s])) {
