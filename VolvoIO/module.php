@@ -1158,7 +1158,6 @@ class VolvoIO extends IPSModule
             $uri .= '/' . $detail;
         }
 
-		return false;
         $headerfields = [
             'Accept'        => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
