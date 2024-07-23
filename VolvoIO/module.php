@@ -96,6 +96,7 @@ class VolvoIO extends IPSModule
 
         $this->RegisterPropertyBoolean('collectApiCallStats', true);
 
+        $this->RegisterAttributeString('ApiAccessToken', json_encode([]));
         $this->RegisterAttributeString('ApiRefreshToken', json_encode([]));
 
         $this->RegisterAttributeString('UpdateInfo', json_encode([]));
@@ -103,7 +104,6 @@ class VolvoIO extends IPSModule
 
         $this->InstallVarProfiles(false);
 
-        $this->SetBuffer('ApiAccessToken', json_encode([]));
         $this->SetBuffer('ConnectionType', '');
 
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
@@ -203,8 +203,7 @@ class VolvoIO extends IPSModule
             if (IPS_GetKernelRunlevel() == KR_READY) {
                 $this->RegisterOAuth($this->oauthIdentifer);
             }
-            $refresh_token = $this->ReadAttributeString('ApiRefreshToken');
-            if ($refresh_token == '') {
+            if ($this->GetRefreshToken() == '') {
                 $this->MaintainStatus(self::$IS_NOLOGIN);
                 return;
             }
@@ -269,7 +268,7 @@ class VolvoIO extends IPSModule
             case self::$CONNECTION_OAUTH:
                 $formElements[] = [
                     'type'    => 'ExpansionPanel',
-                    'caption' => 'Volvo Login',
+                    'caption' => 'Volvo login',
                     'items'   => [
                         [
                             'type'    => 'Label',
@@ -277,7 +276,7 @@ class VolvoIO extends IPSModule
                         ],
                         [
                             'type'    => 'Label',
-                            'caption' => 'At the webpage from Volvo log in with your Husqvarna username and password.'
+                            'caption' => 'At the webpage from Volvo log in with your Volvo-ID and password.'
                         ],
                         [
                             'type'    => 'Label',
@@ -430,8 +429,8 @@ class VolvoIO extends IPSModule
     {
         if (isset($_GET['code']) == false) {
             $this->SendDebug(__FUNCTION__, 'code missing, _GET=' . print_r($_GET, true), 0);
-            $this->WriteAttributeString('ApiRefreshToken', json_encode([]));
-            $this->SetBuffer('ApiAccessToken', json_encode([]));
+            $this->SetRefreshToken('');
+            $this->SetAccessToken('');
             $this->MaintainStatus(self::$IS_NOLOGIN);
             return;
         }
@@ -442,8 +441,8 @@ class VolvoIO extends IPSModule
         $jdata = $this->Call4ApiAccessToken(['code' => $code]);
         if ($jdata == false) {
             $this->SendDebug(__FUNCTION__, 'got no token', 0);
-            $this->WriteAttributeString('ApiRefreshToken', json_encode([]));
-            $this->SetBuffer('ApiAccessToken', json_encode([]));
+            $this->SetRefreshToken('');
+            $this->SetAccessToken('');
             $this->MaintainStatus(self::$IS_NOLOGIN);
             return false;
         }
@@ -451,21 +450,10 @@ class VolvoIO extends IPSModule
         $this->SendDebug(__FUNCTION__, 'jdata=' . print_r($jdata, true), 0);
         $access_token = $jdata['access_token'];
         $expiration = time() + $jdata['expires_in'];
-        $jtoken = [
-            'access_token' => $access_token,
-            'expiration'   => $expiration,
-        ];
-        $this->SetBuffer('ApiAccessToken', json_encode($jtoken));
-        $this->SendDebug(__FUNCTION__, 'new access_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
+        $this->SetAccessToken($access_token, $expiration);
 
         $refresh_token = $jdata['refresh_token'];
-        $expiration = time() + (7 * 24 * 60 * 60);
-        $jtoken = [
-            'refresh_token' => $refresh_token,
-            'expiration'    => $expiration,
-        ];
-        $this->WriteAttributeString('ApiRefreshToken', json_encode($jtoken));
-        $this->SendDebug(__FUNCTION__, 'new refresh_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
+        $this->SetRefreshToken($refresh_token);
 
         if ($this->GetStatus() == self::$IS_NOLOGIN) {
             $this->MaintainStatus(IS_ACTIVE);
@@ -545,20 +533,27 @@ class VolvoIO extends IPSModule
         return $jdata;
     }
 
-    private function build_header($headerfields)
+    private function SetRefreshToken($refresh_token = '')
     {
-        $header = [];
-        foreach ($headerfields as $key => $value) {
-            $header[] = $key . ': ' . $value;
+        if ($refresh_token == '') {
+            $expiration = 0;
+            $this->SendDebug(__FUNCTION__, 'clear refresh_token', 0);
+        } else {
+            $expiration = time() + (7 * 24 * 60 * 60);
+            $this->SendDebug(__FUNCTION__, 'new refresh_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
         }
-        return $header;
+        $jtoken = [
+            'tstamp'        => time(),
+            'refresh_token' => $refresh_token,
+            'expiration'    => $expiration,
+        ];
+        $this->WriteAttributeString('ApiRefreshToken', json_encode($jtoken));
     }
 
-    private function RefreshAccessToken()
+    private function GetRefreshToken()
     {
         $jtoken = @json_decode($this->ReadAttributeString('ApiRefreshToken'), true);
         if ($jtoken != false) {
-            $this->SendDebug(__FUNCTION__, 'jtoken=' . print_r($jtoken, true), 0);
             $refresh_token = isset($jtoken['refresh_token']) ? $jtoken['refresh_token'] : '';
             $expiration = isset($jtoken['expiration']) ? $jtoken['expiration'] : 0;
             if ($expiration < time()) {
@@ -572,6 +567,56 @@ class VolvoIO extends IPSModule
             $this->SendDebug(__FUNCTION__, 'no saved refresh_token', 0);
             $refresh_token = '';
         }
+        return $refresh_token;
+    }
+
+    private function SetAccessToken($access_token = '', $expiration = 0)
+    {
+        if ($access_token == '') {
+            $this->SendDebug(__FUNCTION__, 'clear access_token', 0);
+        } else {
+            $this->SendDebug(__FUNCTION__, 'new access_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
+        }
+        $jtoken = [
+            'tstamp'       => time(),
+            'access_token' => $access_token,
+            'expiration'   => $expiration,
+        ];
+        $this->WriteAttributeString('ApiAccessToken', json_encode($jtoken));
+    }
+
+    private function GetAccessToken()
+    {
+        $jtoken = @json_decode($this->ReadAttributeString('ApiAccessToken'), true);
+        if ($jtoken != false) {
+            $access_token = isset($jtoken['access_token']) ? $jtoken['access_token'] : '';
+            $expiration = isset($jtoken['expiration']) ? $jtoken['expiration'] : 0;
+            if ($expiration < time()) {
+                $this->SendDebug(__FUNCTION__, 'access_token expired', 0);
+                $access_token = '';
+            }
+            if ($access_token != '') {
+                $this->SendDebug(__FUNCTION__, 'old access_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
+            }
+        } else {
+            $this->SendDebug(__FUNCTION__, 'no saved access_token', 0);
+            $access_token = '';
+        }
+        return $access_token;
+    }
+
+    private function build_header($headerfields)
+    {
+        $header = [];
+        foreach ($headerfields as $key => $value) {
+            $header[] = $key . ': ' . $value;
+        }
+        return $header;
+    }
+
+    private function RefreshAccessToken()
+    {
+        $refresh_token = $this->GetRefreshToken();
         if ($refresh_token == '') {
             return $refresh_token;
         }
@@ -655,8 +700,8 @@ class VolvoIO extends IPSModule
         }
 
         if ($statuscode == self::$IS_UNAUTHORIZED) {
-            $this->WriteAttributeString('ApiRefreshToken', json_encode([]));
-            $this->SetBuffer('ApiAccessToken', json_encode([]));
+            $this->SetRefreshToken('');
+            $this->SetAccessToken('');
         }
 
         if ($statuscode == 0) {
@@ -681,21 +726,10 @@ class VolvoIO extends IPSModule
         if ($statuscode == 0) {
             $access_token = $jbody['access_token'];
             $expiration = time() + $jbody['expires_in'];
-            $jtoken = [
-                'access_token' => $access_token,
-                'expiration'   => $expiration,
-            ];
-            $this->SetBuffer('ApiAccessToken', json_encode($jtoken));
-            $this->SendDebug(__FUNCTION__, 'new access_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
+            $this->SetAccessToken($access_token, $expiration);
 
             $refresh_token = $jbody['refresh_token'];
-            $expiration = time() + (7 * 24 * 60 * 60);
-            $jtoken = [
-                'refresh_token' => $refresh_token,
-                'expiration'    => $expiration,
-            ];
-            $this->WriteAttributeString('ApiRefreshToken', json_encode($jtoken));
-            $this->SendDebug(__FUNCTION__, 'new refresh_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
+            $this->SetRefreshToken($refresh_token);
         }
 
         $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
@@ -716,23 +750,6 @@ class VolvoIO extends IPSModule
 
     private function DeveloperApiAccessToken()
     {
-        $jtoken = @json_decode($this->GetBuffer('ApiAccessToken'), true);
-        if ($jtoken != false) {
-            $this->SendDebug(__FUNCTION__, 'jtoken=' . print_r($jtoken, true), 0);
-            $access_token = isset($jtoken['access_token']) ? $jtoken['access_token'] : '';
-            $expiration = isset($jtoken['expiration']) ? $jtoken['expiration'] : 0;
-            if ($expiration < time()) {
-                $this->SendDebug(__FUNCTION__, 'access_token expired', 0);
-                $access_token = '';
-            }
-            if ($access_token != '') {
-                $this->SendDebug(__FUNCTION__, 'old access_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
-                return $access_token;
-            }
-        } else {
-            $this->SendDebug(__FUNCTION__, 'no saved access_token', 0);
-        }
-
         $access_token = $this->RefreshAccessToken();
         if ($access_token != '') {
             return $access_token;
@@ -821,8 +838,8 @@ class VolvoIO extends IPSModule
         }
 
         if ($statuscode == self::$IS_UNAUTHORIZED) {
-            $this->WriteAttributeString('ApiRefreshToken', json_encode([]));
-            $this->SetBuffer('ApiAccessToken', json_encode([]));
+            $this->SetRefreshToken('');
+            $this->SetAccessToken('');
         }
 
         if ($statuscode == 0) {
@@ -847,21 +864,10 @@ class VolvoIO extends IPSModule
         if ($statuscode == 0) {
             $access_token = $jbody['access_token'];
             $expiration = time() + $jbody['expires_in'];
-            $jtoken = [
-                'access_token' => $access_token,
-                'expiration'   => $expiration,
-            ];
-            $this->SetBuffer('ApiAccessToken', json_encode($jtoken));
-            $this->SendDebug(__FUNCTION__, 'new access_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
+            $this->SetAccessToken($access_token, $expiration);
 
             $refresh_token = $jbody['refresh_token'];
-            $expiration = time() + (7 * 24 * 60 * 60);
-            $jtoken = [
-                'refresh_token' => $refresh_token,
-                'expiration'    => $expiration,
-            ];
-            $this->WriteAttributeString('ApiRefreshToken', json_encode($jtoken));
-            $this->SendDebug(__FUNCTION__, 'new refresh_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
+            $this->SetRefreshToken($refresh_token);
         }
 
         $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
@@ -880,16 +886,34 @@ class VolvoIO extends IPSModule
         return $access_token;
     }
 
-    private function GetApiAccessToken($access_token = '', $expiration = 0)
+    private function GetApiAccessToken($renew = false)
     {
         if (IPS_SemaphoreEnter($this->SemaphoreID, self::$semaphoreTM) == false) {
             $this->SendDebug(__FUNCTION__, 'unable to lock sempahore ' . $this->SemaphoreID, 0);
             return false;
         }
 
+        if ($renew == false) {
+            $access_token = $this->GetAccessToken();
+            if ($access_token != '') {
+                IPS_SemaphoreLeave($this->SemaphoreID);
+                return $access_token;
+            }
+        }
+
         $connection_type = $this->ReadPropertyInteger('connection_type');
         switch ($connection_type) {
             case self::$CONNECTION_OAUTH:
+                $refresh_token == $this->GetRefreshToken();
+                if ($refresh_token == '') {
+                    $this->SendDebug(__FUNCTION__, 'has no refresh_token', 0);
+                    $this->SetAccessToken('');
+                    $this->MaintainStatus(self::$IS_NOLOGIN);
+                    IPS_SemaphoreLeave($this->SemaphoreID);
+                    return false;
+                }
+                $jdata = $this->Call4ApiAccessToken(['refresh_token' => $refresh_token]);
+                $access_token = $jdata != false ? $jdata['access_token'] : false;
                 break;
             case self::$CONNECTION_DEVELOPER:
                 $access_token = $this->DeveloperApiAccessToken();
@@ -913,6 +937,13 @@ class VolvoIO extends IPSModule
         }
 
         $txt = '';
+
+		$access_token = $this->GetApiAccessToken();
+        if ($access_token == false) {
+            $msg = $this->Translate('invalid account-data') . PHP_EOL;
+            $this->PopupMessage($msg);
+            return;
+        }
 
         $data = $this->GetVehicles();
         if ($data == false) {
@@ -945,8 +976,8 @@ class VolvoIO extends IPSModule
             return false;
         }
 
-        $this->WriteAttributeString('ApiRefreshToken', json_encode([]));
-        $this->SetBuffer('ApiAccessToken', json_encode([]));
+        $this->SetRefreshToken('');
+        $this->SetAccessToken('');
 
         IPS_SemaphoreLeave($this->SemaphoreID);
     }
@@ -1011,7 +1042,17 @@ class VolvoIO extends IPSModule
         }
 
         $header = $this->build_header($headerfields);
-        $postdata = http_build_query($postfields);
+
+        if ($postfields != '') {
+            if (isset($headerfields['Content-Type']) && preg_match('#application/json#', $headerfields['Content-Type'])) {
+                $postdata = json_encode($postfields);
+            } else {
+                $postdata = http_build_query($postfields);
+            }
+            $this->SendDebug(__FUNCTION__, '... postdata=' . $postdata, 0);
+        } else {
+            $postdata = '';
+        }
 
         $curl_opts = [
             CURLOPT_URL            => $url,
@@ -1080,8 +1121,8 @@ class VolvoIO extends IPSModule
         }
 
         if ($statuscode == self::$IS_UNAUTHORIZED) {
-            $this->WriteAttributeString('ApiRefreshToken', json_encode([]));
-            $this->SetBuffer('ApiAccessToken', json_encode([]));
+            $this->SetRefreshToken('');
+            $this->SetAccessToken('');
         }
 
         $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
@@ -1162,6 +1203,7 @@ class VolvoIO extends IPSModule
             'Accept'        => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
             'vcc-api-key'   => $vcc_api_key,
+            'Content-Type'  => 'application/json',
         ];
 
         $body = $this->do_HttpRequest($uri, [], $headerfields, $postfields, 'POST');

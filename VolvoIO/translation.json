@@ -23,12 +23,23 @@
 			"Username": "Benutzer",
 			"Password": "Passwort",
 
+			"Volvo login": "Volvi Login",
+			"Push \"Login at Volvo\" in the action part of this configuration form.":
+				"Drücken Sie \"bei Volvo anmelden\" im Aktionsteil dieses Konfigurationsformulars.",
+			"At the webpage from Volvo log in with your Volvo-ID and password.":
+				"Auf der Webseite von Volvo melden Sie sich mit Ihrer Volvo-ID und Ihrem Passwort an.",
+			"If the connection to IP-Symcon was successfull you get the message: \"Volvo successfully connected!\". Close the browser window.":
+				"Wenn die Verbindung zu IP-Symcon erfolgreich war, erhalten Sie die Meldung: \"Volvo erfolgreich verbunden!\". Schließen Sie das Browserfenster.",
+			"Return to this configuration form.":
+				"Kehren Sie zu diesem Konfigurationsformular zurück.",
+
 			"Collect data of API calls": "Daten von API-Aufrufen sammeln",
 
 			"__media__": "",
 			"API call statistics": "API-Aufruf-Statistkdaten",
 
 			"__actions__": "",
+			"Login at Volvo": "bei Volvo anmelden",
 			"Test access": "Zugang prüfen",
 			"Clear token": "Token löschen",
 

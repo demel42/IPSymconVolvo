@@ -293,6 +293,15 @@ class VolvoVehicle extends IPSModule
 
         $formActions[] = [
             'type'      => 'ExpansionPanel',
+            'caption'   => 'Expert area',
+            'expanded'  => false,
+            'items'     => [
+                $this->GetInstallVarProfilesFormItem(),
+            ],
+        ];
+
+        $formActions[] = [
+            'type'      => 'ExpansionPanel',
             'caption'   => 'Test area',
             'expanded'  => false,
             'items'     => [
