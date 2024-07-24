@@ -62,6 +62,10 @@ trait VolvoLocalLib
     public static $CONNECTION_OAUTH = 1;
     public static $CONNECTION_DEVELOPER = 2;
 
+    // Kommando auslösen
+    private static $VOLVO_TRIGGER_COMMAND_EXECUTE = 0;
+    private static $VOLVO_TRIGGER_COMMAND_PENDING = 1;
+
     // Antriebsart
     private static $VOLVO_DRIVE_TYPE_UNKNOWN = 0;
     private static $VOLVO_DRIVE_TYPE_ELECTRIC = 1;
@@ -121,6 +125,12 @@ trait VolvoLocalLib
             ['Wert' => true, 'Name' => $this->Translate('Yes'), 'Farbe' => 0xEE0000],
         ];
         $this->CreateVarProfile('Volvo.Failure', VARIABLETYPE_BOOLEAN, '', 0, 0, 0, 0, '', $associations, $reInstall);
+
+        $associations = [
+            ['Wert' => self::$VOLVO_TRIGGER_COMMAND_EXECUTE, 'Name' => $this->Translate('Execute'), 'Farbe' => 0x3ADF00],
+            ['Wert' => self::$VOLVO_TRIGGER_COMMAND_PENDING, 'Name' => $this->Translate('Pending'), 'Farbe' => 0xEE0000],
+        ];
+        $this->CreateVarProfile('Volvo.TriggerCommand', VARIABLETYPE_INTEGER, '', 0, 0, 0, 0, '', $associations, $reInstall);
 
         $associations = [
             ['Wert' => self::$VOLVO_ENGINE_STATE_UNKNOWN, 'Name' => $this->Translate('unknown'), 'Farbe' => 0xEE0000],

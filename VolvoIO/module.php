@@ -938,7 +938,7 @@ class VolvoIO extends IPSModule
 
         $txt = '';
 
-		$access_token = $this->GetApiAccessToken();
+        $access_token = $this->GetApiAccessToken();
         if ($access_token == false) {
             $msg = $this->Translate('invalid account-data') . PHP_EOL;
             $this->PopupMessage($msg);

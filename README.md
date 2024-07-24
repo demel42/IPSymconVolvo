@@ -124,5 +124,5 @@ Volvo.Speed
 
 ## 7. Versions-Historie
 
-- 0.9 @ 23.07.2024 18:07
+- 0.9 @ 24.07.2024 11:56
   - Initiale Version

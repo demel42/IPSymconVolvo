@@ -168,6 +168,13 @@ class VolvoVehicle extends IPSModule
         $this->MaintainVariable('AverageSpeedAutomatic', $this->Translate('Average speed (TA)'), VARIABLETYPE_FLOAT, 'Volvo.Speed', $vpos++, true);
         $this->MaintainVariable('TripMeterAutomatic', $this->Translate('Trip meter (TA)'), VARIABLETYPE_FLOAT, 'Volvo.Distance', $vpos++, true);
 
+        $vpos = 100;
+        $this->MaintainVariable('LastCommand', $this->Translate('Last command'), VARIABLETYPE_STRING, '', $vpos++, true);
+        $this->MaintainVariable('LockDoors', $this->Translate('Lock doors'), VARIABLETYPE_INTEGER, 'Volvo.TriggerCommand', $vpos++, true);
+        $this->MaintainVariable('UnlockDoors', $this->Translate('Unlock doors'), VARIABLETYPE_INTEGER, 'Volvo.TriggerCommand', $vpos++, true);
+        $this->MaintainVariable('StartClimatization', $this->Translate('Start climatization'), VARIABLETYPE_INTEGER, 'Volvo.TriggerCommand', $vpos++, true);
+        $this->MaintainVariable('StopClimatization', $this->Translate('Stop climatization'), VARIABLETYPE_INTEGER, 'Volvo.TriggerCommand', $vpos++, true);
+
         $module_disable = $this->ReadPropertyBoolean('module_disable');
         if ($module_disable) {
             $this->MaintainTimer('UpdateStatus', 0);
@@ -383,6 +390,12 @@ class VolvoVehicle extends IPSModule
             $this->SetBuffer('VehicleData', json_encode($vehicleData));
             $this->SendDebug(__FUNCTION__, 'VehicleData=' . print_r($vehicleData, true), 0);
         }
+
+        $this->SendDebug(__FUNCTION__, 'commands=' . print_r($vehicleData['commands'], true), 0);
+        $this->MaintainAction('LockDoors', in_array('LOCK', $vehicleData['commands']));
+        $this->MaintainAction('UnlockDoors', in_array('UNLOCK', $vehicleData['commands']));
+        $this->MaintainAction('StartClimatization', in_array('CLIMATIZATION_START', $vehicleData['commands']));
+        $this->MaintainAction('StopClimatization', in_array('CLIMATIZATION_STOP', $vehicleData['commands']));
 
         $odometer = $this->GetApiConnectedVehicle('odometer');
         if ($odometer != false) {
@@ -952,9 +965,22 @@ class VolvoVehicle extends IPSModule
             return false;
         }
 
+        $this->SetValue('LockDoors', self::$VOLVO_TRIGGER_COMMAND_PENDING);
+
         $this->SendDebug(__FUNCTION__, 'call api ...', 0);
         $r = $this->PostApiConnectedVehicle('commands/lock', []);
         $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
+
+        $invokeStatus = $this->GetArrayElem($r, 'invokeStatus', '');
+        $s = $this->Translate('Lock doors') . ': ' . $this->Translate($invokeStatus);
+        $message = $this->GetArrayElem($r, 'message', '');
+        if ($message != '') {
+            $s .= ' (' . $message . ')';
+        }
+        $this->SetValue('LastCommand', $s);
+        $this->SetValue('LockDoors', self::$VOLVO_TRIGGER_COMMAND_EXECUTE);
+        //if ($invokeStatus=="COMPLETED") $this->SetValue('CentralLockState', self::$VOLVO_CENTRALLOCK_STATE_LOCKED);
+
         return true;
     }
 
@@ -965,9 +991,22 @@ class VolvoVehicle extends IPSModule
             return false;
         }
 
+        $this->SetValue('UnlockDoors', self::$VOLVO_TRIGGER_COMMAND_PENDING);
+
         $this->SendDebug(__FUNCTION__, 'call api ...', 0);
         $r = $this->PostApiConnectedVehicle('commands/unlock', ['unlockDuration' => 120]);
         $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
+
+        $invokeStatus = $this->GetArrayElem($r, 'invokeStatus', '');
+        $s = $this->Translate('Unlock doors') . ': ' . $this->Translate($invokeStatus);
+        $message = $this->GetArrayElem($r, 'message', '');
+        if ($message != '') {
+            $s .= ' (' . $message . ')';
+        }
+        $this->SetValue('LastCommand', $s);
+        $this->SetValue('UnlockDoors', self::$VOLVO_TRIGGER_COMMAND_EXECUTE);
+		//if ($invokeStatus=="COMPLETED") $this->SetValue('CentralLockState', self::$VOLVO_CENTRALLOCK_STATE_UNLOCKED);
+
         return true;
     }
 
@@ -978,9 +1017,21 @@ class VolvoVehicle extends IPSModule
             return false;
         }
 
+        $this->SetValue('StartClimatization', self::$VOLVO_TRIGGER_COMMAND_PENDING);
+
         $this->SendDebug(__FUNCTION__, 'call api ...', 0);
         $r = $this->PostApiConnectedVehicle('commands/climatization-start', []);
         $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
+
+        $invokeStatus = $this->GetArrayElem($r, 'invokeStatus', '');
+        $s = $this->Translate('Start climatization') . ': ' . $this->Translate($invokeStatus);
+        $message = $this->GetArrayElem($r, 'message', '');
+        if ($message != '') {
+            $s .= ' (' . $message . ')';
+        }
+        $this->SetValue('LastCommand', $s);
+        $this->SetValue('StartClimatization', self::$VOLVO_TRIGGER_COMMAND_EXECUTE);
+
         return true;
     }
 
@@ -991,9 +1042,21 @@ class VolvoVehicle extends IPSModule
             return false;
         }
 
+        $this->SetValue('StopClimatization', self::$VOLVO_TRIGGER_COMMAND_PENDING);
+
         $this->SendDebug(__FUNCTION__, 'call api ...', 0);
         $r = $this->PostApiConnectedVehicle('commands/climatization-stop', []);
         $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
+
+        $invokeStatus = $this->GetArrayElem($r, 'invokeStatus', '');
+        $s = $this->Translate('Stop climatization') . ': ' . $this->Translate($invokeStatus);
+        $message = $this->GetArrayElem($r, 'message', '');
+        if ($message != '') {
+            $s .= ' (' . $message . ')';
+        }
+        $this->SetValue('LastCommand', $s);
+        $this->SetValue('StopClimatization', self::$VOLVO_TRIGGER_COMMAND_EXECUTE);
+
         return true;
     }
 

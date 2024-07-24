@@ -119,15 +119,33 @@
 			"ENGINE_HOURS_OVERDUE_FOR_SERVICE": "Wartung (Motor-Betriebsstunden) überfällig",
 			"DISTANCE_DRIVEN_OVERDUE_FOR_SERVICE": "Wartung (Strecke) überfällig",
 
-			"__messages__": "",
-			"Instance has no active gateway": "Instanz hat keinen aktiven Gateway",
+			"__map__": "invokeStatus",
+			"CAR_ERROR": "Fehler im Fahrzeug",
+			"COMPLETED": "ausgeführt",
+			"CONNECTION_FAILURE": "Verbindungsfehler",
+			"DELIVERED": "ausgeliefert",
+			"NOT_ALLOWED_PRIVACY_ENABLED": "Datenschutz aktiviert",
+			"NOT_ALLOWED_WRONG_USAGE_MODE": "falscher Nutzungsmodus",
+			"REJECTED": "abgelehnt",
+			"RUNNING": "läuft",
+			"TIMEOUT": "Zeitüberschreitung",
+			"UNABLE_TO_LOCK_DOOR_OPEN": "kann nicht verriegelt, Tür noch offen",
+			"UNKNOWN": "unbekannt",
+			"UNLOCK_TIME_FRAME_PASSED": "Zeitrahmen für Entriegelung überschritten",
+			"VEHICLE_IN_SLEEP": "Fahrzeug im Ruhezustand",
+			"WAITING": "ausstehend",
 
-			"__actions__": "",
-			"Update status": "Aktualisiere Status",
+			"Last command": "Letzter Befehl",
 			"Lock doors": "Türen versperren",
 			"Unlock doors": "Türen entsperren",
 			"Start climatization": "Klimatisierung starten",
 			"Stop climatization": "Klimatisierung stoppen",
+
+			"__actions__": "",
+			"Update status": "Aktualisiere Status",
+
+			"__messages__": "",
+			"Instance has no active gateway": "Instanz hat keinen aktiven Gateway",
 
 			"__end__": ""
 		},
@@ -153,6 +171,21 @@
 			"ENGINE_HOURS_OVERDUE_FOR_SERVICE": "Maintenance (engine operating hours) overdue",
 			"DISTANCE_DRIVEN_OVERDUE_FOR_SERVICE": "Maintenance (distance) overdue",
 
+			"__map__": "invokeStatus",
+			"CAR_ERROR": "car error",
+			"COMPLETED": "ausgeführt",
+			"CONNECTION_FAILURE": "connection failure",
+			"DELIVERED": "delivered",
+			"NOT_ALLOWED_PRIVACY_ENABLED": "not allowed privacy enabled",
+			"NOT_ALLOWED_WRONG_USAGE_MODE": "not allowed wrong usage mode",
+			"REJECTED": "rejected",
+			"RUNNING": "running",
+			"TIMEOUT": "timeout",
+			"UNABLE_TO_LOCK_DOOR_OPEN": "unable to lock door open",
+			"UNKNOWN": "unknown",
+			"UNLOCK_TIME_FRAME_PASSED": "unlock time frame passed",
+			"VEHICLE_IN_SLEEP": "vehicle in sleep",
+			"WAITING": "waiting",
 			"__end__": ""
 		}
 	}

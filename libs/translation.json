@@ -5,6 +5,10 @@
 			"No": "Nein",
 			"Yes": "Ja",
 
+			"__variableprofile__": "Volvo.TriggerCommand",
+			"Execute": "ausführen",
+			"Pending": "ausstehend",
+
 			"__variableprofile__": "Volvo.EngineStatus",
 			"unknown": "unbekannt",
 			"stopped": "gestoppt",
