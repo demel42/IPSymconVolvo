@@ -18,7 +18,8 @@
 
 Volvo bietet für bestimmte Modelle eine Kommunikation via Internet/Volvo-Cloud an: ([Volvo Cars API](https://developer.volvocars.com)), diese steht nur für bestimmte Modelle zur Vefüdung ([siehe hier](https://developer.volvocars.com/apis/connected-vehicle/v2/overview/#availability)).
 
-Realisiert ist der Datenabruf alle verfügbarer Daaten; Steuerungsfunktionen des Fahrzeugs sind nicht implementiert.
+Realisiert ist sowohl der Abruf der Daten als auch die relevanten Befehle.
+
 ## 2. Voraussetzungen
 
 - IP-Symcon ab Version 6.0
@@ -124,5 +125,5 @@ Volvo.Speed
 
 ## 7. Versions-Historie
 
-- 0.9 @ 25.07.2024 09:19
+- 0.9 @ 25.07.2024 11:26
   - Initiale Version

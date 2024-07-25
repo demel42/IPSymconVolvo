@@ -257,47 +257,6 @@ class VolvoVehicle extends IPSModule
             'onClick' => 'IPS_RequestAction($id, "UpdateStatus", "");',
         ];
 
-        $vehicleData = @json_decode($this->GetBuffer('VehicleData'), true);
-        if ($vehicleData != false) {
-            $items = [];
-            foreach ($vehicleData['commands'] as $command) {
-                switch ($command) {
-                    case 'LOCK':
-                        $items[] = [
-                            'type'    => 'Button',
-                            'caption' => 'Lock doors',
-                            'onClick' => 'IPS_RequestAction($id, "LockDoors", "");',
-                        ];
-                        break;
-                    case 'UNLOCK':
-                        $items[] = [
-                            'type'    => 'Button',
-                            'caption' => 'Unlock doors',
-                            'onClick' => 'IPS_RequestAction($id, "UnlockDoors", "");',
-                        ];
-                        break;
-                    case 'CLIMATIZATION_START':
-                        $items[] = [
-                            'type'    => 'Button',
-                            'caption' => 'Start climatization',
-                            'onClick' => 'IPS_RequestAction($id, "StartClimatization", "");',
-                        ];
-                        break;
-                    case 'CLIMATIZATION_STOP':
-                        $items[] = [
-                            'type'    => 'Button',
-                            'caption' => 'Stop climatization',
-                            'onClick' => 'IPS_RequestAction($id, "StopClimatization", "");',
-                        ];
-                        break;
-                }
-            }
-            $formActions[] = [
-                'type'    => 'RowLayout',
-                'items'   => $items,
-            ];
-        }
-
         $formActions[] = [
             'type'      => 'ExpansionPanel',
             'caption'   => 'Expert area',
