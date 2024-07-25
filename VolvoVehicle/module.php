@@ -962,7 +962,6 @@ class VolvoVehicle extends IPSModule
         $data = $this->SendDataToParent(json_encode($SendData));
         $this->SendDebug(__FUNCTION__, 'SendData=' . json_encode($SendData) . ', data=' . $data, 0);
         $jdata = @json_decode($data, true);
-        $this->SendDebug(__FUNCTION__, 'jdata=' . print_r($jdata, true), 0);
         return $jdata;
     }
 
@@ -1092,7 +1091,6 @@ class VolvoVehicle extends IPSModule
         $data = $this->SendDataToParent(json_encode($SendData));
         $this->SendDebug(__FUNCTION__, 'SendData=' . json_encode($SendData) . ', data=' . $data, 0);
         $jdata = @json_decode($data, true);
-        $this->SendDebug(__FUNCTION__, 'jdata=' . print_r($jdata, true), 0);
         return $jdata;
     }
 
@@ -1115,7 +1113,6 @@ class VolvoVehicle extends IPSModule
         $data = $this->SendDataToParent(json_encode($SendData));
         $this->SendDebug(__FUNCTION__, 'SendData=' . json_encode($SendData) . ', data=' . $data, 0);
         $jdata = @json_decode($data, true);
-        $this->SendDebug(__FUNCTION__, 'jdata=' . print_r($jdata, true), 0);
         return $jdata;
     }
 
@@ -1138,7 +1135,6 @@ class VolvoVehicle extends IPSModule
         $data = $this->SendDataToParent(json_encode($SendData));
         $this->SendDebug(__FUNCTION__, 'SendData=' . json_encode($SendData) . ', data=' . $data, 0);
         $jdata = @json_decode($data, true);
-        $this->SendDebug(__FUNCTION__, 'jdata=' . print_r($jdata, true), 0);
         return $jdata;
     }
 
@@ -1161,7 +1157,6 @@ class VolvoVehicle extends IPSModule
         $data = $this->SendDataToParent(json_encode($SendData));
         $this->SendDebug(__FUNCTION__, 'SendData=' . json_encode($SendData) . ', data=' . $data, 0);
         $jdata = @json_decode($data, true);
-        $this->SendDebug(__FUNCTION__, 'jdata=' . print_r($jdata, true), 0);
         return $jdata;
     }
 }
