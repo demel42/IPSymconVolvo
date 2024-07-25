@@ -359,15 +359,6 @@ class VolvoVehicle extends IPSModule
         $vehicleData = @json_decode($this->GetBuffer('VehicleData'), true);
         if ($vehicleData == false) {
             $vehicleData = [];
-            $commands = $this->GetApiConnectedVehicle('commands');
-            if ($commands != false) {
-                $this->SendDebug(__FUNCTION__, 'command=' . print_r($commands, true), 0);
-                $cmds = [];
-                foreach ($commands['data'] as $c) {
-                    $cmds[] = $c['command'];
-                }
-                $vehicleData['commands'] = $cmds;
-            }
 
             $vehicle = $this->GetApiConnectedVehicle();
             if ($vehicle != false) {
@@ -387,6 +378,23 @@ class VolvoVehicle extends IPSModule
                 }
                 $vehicleData['basics'] = $vehicle['data'];
             }
+
+            $commands = $this->GetApiConnectedVehicle('commands');
+            if ($commands != false) {
+                $this->SendDebug(__FUNCTION__, 'commands=' . print_r($commands, true), 0);
+                $cmds = [];
+                foreach ($commands['data'] as $c) {
+                    $cmds[] = $c['command'];
+                }
+                $vehicleData['commands'] = $cmds;
+            }
+
+            $resources = $this->GetApiExtendedVehicle('resources');
+            if ($resources) {
+                $this->SendDebug(__FUNCTION__, 'resources=' . print_r($resources, true), 0);
+                $vehicleData['resources'] = $resources;
+            }
+
             $this->SetBuffer('VehicleData', json_encode($vehicleData));
             $this->SendDebug(__FUNCTION__, 'VehicleData=' . print_r($vehicleData, true), 0);
         }
@@ -971,15 +979,17 @@ class VolvoVehicle extends IPSModule
         $r = $this->PostApiConnectedVehicle('commands/lock', []);
         $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
 
-        $invokeStatus = $this->GetArrayElem($r, 'invokeStatus', '');
+        $invokeStatus = $this->GetArrayElem($r, 'data.invokeStatus', '');
         $s = $this->Translate('Lock doors') . ': ' . $this->Translate($invokeStatus);
-        $message = $this->GetArrayElem($r, 'message', '');
+        $message = $this->GetArrayElem($r, 'data.message', '');
         if ($message != '') {
             $s .= ' (' . $message . ')';
         }
         $this->SetValue('LastCommand', $s);
         $this->SetValue('LockDoors', self::$VOLVO_TRIGGER_COMMAND_EXECUTE);
-        //if ($invokeStatus=="COMPLETED") $this->SetValue('CentralLockState', self::$VOLVO_CENTRALLOCK_STATE_LOCKED);
+        if ($invokeStatus == 'COMPLETED') {
+            $this->SetValue('CentralLockState', self::$VOLVO_CENTRALLOCK_STATE_LOCKED);
+        }
 
         return true;
     }
@@ -997,15 +1007,17 @@ class VolvoVehicle extends IPSModule
         $r = $this->PostApiConnectedVehicle('commands/unlock', ['unlockDuration' => 120]);
         $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
 
-        $invokeStatus = $this->GetArrayElem($r, 'invokeStatus', '');
+        $invokeStatus = $this->GetArrayElem($r, 'data.invokeStatus', '');
         $s = $this->Translate('Unlock doors') . ': ' . $this->Translate($invokeStatus);
-        $message = $this->GetArrayElem($r, 'message', '');
+        $message = $this->GetArrayElem($r, 'data.message', '');
         if ($message != '') {
             $s .= ' (' . $message . ')';
         }
         $this->SetValue('LastCommand', $s);
         $this->SetValue('UnlockDoors', self::$VOLVO_TRIGGER_COMMAND_EXECUTE);
-		//if ($invokeStatus=="COMPLETED") $this->SetValue('CentralLockState', self::$VOLVO_CENTRALLOCK_STATE_UNLOCKED);
+        if ($invokeStatus == 'COMPLETED') {
+            $this->SetValue('CentralLockState', self::$VOLVO_CENTRALLOCK_STATE_UNLOCKED);
+        }
 
         return true;
     }
@@ -1023,9 +1035,9 @@ class VolvoVehicle extends IPSModule
         $r = $this->PostApiConnectedVehicle('commands/climatization-start', []);
         $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
 
-        $invokeStatus = $this->GetArrayElem($r, 'invokeStatus', '');
+        $invokeStatus = $this->GetArrayElem($r, 'data.invokeStatus', '');
         $s = $this->Translate('Start climatization') . ': ' . $this->Translate($invokeStatus);
-        $message = $this->GetArrayElem($r, 'message', '');
+        $message = $this->GetArrayElem($r, 'data.message', '');
         if ($message != '') {
             $s .= ' (' . $message . ')';
         }
@@ -1048,9 +1060,9 @@ class VolvoVehicle extends IPSModule
         $r = $this->PostApiConnectedVehicle('commands/climatization-stop', []);
         $this->SendDebug(__FUNCTION__, 'r=' . print_r($r, true), 0);
 
-        $invokeStatus = $this->GetArrayElem($r, 'invokeStatus', '');
+        $invokeStatus = $this->GetArrayElem($r, 'data.invokeStatus', '');
         $s = $this->Translate('Stop climatization') . ': ' . $this->Translate($invokeStatus);
-        $message = $this->GetArrayElem($r, 'message', '');
+        $message = $this->GetArrayElem($r, 'data.message', '');
         if ($message != '') {
             $s .= ' (' . $message . ')';
         }
@@ -1120,6 +1132,29 @@ class VolvoVehicle extends IPSModule
             'DataID'   => '{83DF672B-CA66-5372-A632-E9A5406332A7}', // an VolvoIO
             'CallerID' => $this->InstanceID,
             'Function' => 'GetApiLocation',
+            'vin'      => $vin,
+            'detail'   => $detail,
+        ];
+        $data = $this->SendDataToParent(json_encode($SendData));
+        $this->SendDebug(__FUNCTION__, 'SendData=' . json_encode($SendData) . ', data=' . $data, 0);
+        $jdata = @json_decode($data, true);
+        $this->SendDebug(__FUNCTION__, 'jdata=' . print_r($jdata, true), 0);
+        return $jdata;
+    }
+
+    private function GetApiExtendedVehicle($detail = '')
+    {
+        if ($this->CheckStatus() == self::$STATUS_INVALID) {
+            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
+            return;
+        }
+
+        $vin = $this->ReadPropertyString('vin');
+
+        $SendData = [
+            'DataID'   => '{83DF672B-CA66-5372-A632-E9A5406332A7}', // an VolvoIO
+            'CallerID' => $this->InstanceID,
+            'Function' => 'GetApiExtendedVehicle',
             'vin'      => $vin,
             'detail'   => $detail,
         ];

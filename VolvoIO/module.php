@@ -1022,6 +1022,9 @@ class VolvoIO extends IPSModule
                 case 'GetApiLocation':
                     $ret = $this->GetApiLocation($jdata['vin'], $jdata['detail']);
                     break;
+                case 'GetApiExtendedVehicle':
+                    $ret = $this->GetApiExtendedVehicle($jdata['vin'], $jdata['detail']);
+                    break;
                 default:
                     $this->SendDebug(__FUNCTION__, 'unknown function "' . $jdata['Function'] . '"', 0);
                     break;
@@ -1244,6 +1247,30 @@ class VolvoIO extends IPSModule
         }
 
         $uri = 'location/v1/vehicles/' . $vin;
+        if ($detail != '') {
+            $uri .= '/' . $detail;
+        }
+
+        $headerfields = [
+            'Accept'        => 'application/json',
+            'Authorization' => 'Bearer ' . $access_token,
+            'vcc-api-key'   => $vcc_api_key,
+        ];
+
+        $body = $this->do_HttpRequest($uri, [], $headerfields, [], 'GET');
+        return $body;
+    }
+
+    private function GetApiExtendedVehicle($vin, $detail)
+    {
+        $vcc_api_key = $this->ReadPropertyString('vcc_api_key');
+
+        $access_token = $this->GetApiAccessToken();
+        if ($access_token == false) {
+            return false;
+        }
+
+        $uri = 'extended-vehicle/v1/vehicles/' . $vin;
         if ($detail != '') {
             $uri .= '/' . $detail;
         }
