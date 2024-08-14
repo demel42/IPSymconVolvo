@@ -224,7 +224,8 @@ class VolvoConfig extends IPSModule
         $entries = $this->getConfiguratorValues();
         $this->SendDebug(__FUNCTION__, 'entries=' . print_r($entries, true), 0);
         $formElements[] = [
-            'name'     => 'Volvo configuration',
+            'name'     => 'vehicles',
+            'caption'  => 'Vehicles',
             'type'     => 'Configurator',
             'rowCount' => count($entries),
             'add'      => false,
@@ -259,17 +260,7 @@ class VolvoConfig extends IPSModule
             'values'            => $entries,
             'discoveryInterval' => 60 * 60 * 24,
         ];
-
         $formElements[] = $this->GetRefreshDataCacheFormAction();
-        /* TEST */
-        $formElements[] = [
-            'type'    => 'Button',
-            'caption' => 'Reload',
-            'onClick' => 'IPS_RequestAction($id, "ReloadForm", "");',
-        ];
-        /* TEST */
-
-        $this->SendDebug(__FUNCTION__, 'formElements=' . print_r($formElements, true), 0);
 
         return $formElements;
     }
@@ -289,15 +280,6 @@ class VolvoConfig extends IPSModule
 
         $formActions[] = $this->GetInformationFormAction();
         $formActions[] = $this->GetReferencesFormAction();
-
-        /* TEST */
-        $formActions[] = $this->GetRefreshDataCacheFormAction();
-        $formActions[] = [
-            'type'    => 'Button',
-            'caption' => 'Reload',
-            'onClick' => 'IPS_RequestAction($id, "ReloadForm", "");',
-        ];
-        /* TEST */
 
         return $formActions;
     }

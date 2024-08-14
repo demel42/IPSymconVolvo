@@ -315,10 +315,13 @@ class VolvoVehicle extends IPSModule
         $fnd = false;
         $chg = false;
 
+        $vehicleData_chg = false;
         $vehicleData = @json_decode($this->GetBuffer('VehicleData'), true);
         if ($vehicleData == false) {
             $vehicleData = [];
+        }
 
+        if (isset($vehicleData['basics']) == false) {
             $vehicle = $this->GetApiConnectedVehicle();
             if ($vehicle != false) {
                 $this->SendDebug(__FUNCTION__, 'vehicle=' . print_r($vehicle, true), 0);
@@ -336,8 +339,11 @@ class VolvoVehicle extends IPSModule
                     }
                 }
                 $vehicleData['basics'] = $vehicle['data'];
+                $vehicleData_chg = true;
             }
+        }
 
+        if (isset($vehicleData['commands']) == false) {
             $commands = $this->GetApiConnectedVehicle('commands');
             if ($commands != false) {
                 $this->SendDebug(__FUNCTION__, 'commands=' . print_r($commands, true), 0);
@@ -346,23 +352,31 @@ class VolvoVehicle extends IPSModule
                     $cmds[] = $c['command'];
                 }
                 $vehicleData['commands'] = $cmds;
+                $vehicleData_chg = true;
             }
+        }
 
+        if (isset($vehicleData['resources']) == false) {
             $resources = $this->GetApiExtendedVehicle('resources');
             if ($resources) {
                 $this->SendDebug(__FUNCTION__, 'resources=' . print_r($resources, true), 0);
                 $vehicleData['resources'] = $resources;
+                $vehicleData_chg = true;
             }
+        }
 
+        if ($vehicleData_chg) {
             $this->SetBuffer('VehicleData', json_encode($vehicleData));
             $this->SendDebug(__FUNCTION__, 'VehicleData=' . print_r($vehicleData, true), 0);
         }
 
-        $this->SendDebug(__FUNCTION__, 'commands=' . print_r($vehicleData['commands'], true), 0);
-        $this->MaintainAction('LockDoors', in_array('LOCK', $vehicleData['commands']));
-        $this->MaintainAction('UnlockDoors', in_array('UNLOCK', $vehicleData['commands']));
-        $this->MaintainAction('StartClimatization', in_array('CLIMATIZATION_START', $vehicleData['commands']));
-        $this->MaintainAction('StopClimatization', in_array('CLIMATIZATION_STOP', $vehicleData['commands']));
+        if (isset($vehicleData['commands'])) {
+            $this->SendDebug(__FUNCTION__, 'commands=' . print_r($vehicleData['commands'], true), 0);
+            $this->MaintainAction('LockDoors', in_array('LOCK', $vehicleData['commands']));
+            $this->MaintainAction('UnlockDoors', in_array('UNLOCK', $vehicleData['commands']));
+            $this->MaintainAction('StartClimatization', in_array('CLIMATIZATION_START', $vehicleData['commands']));
+            $this->MaintainAction('StopClimatization', in_array('CLIMATIZATION_STOP', $vehicleData['commands']));
+        }
 
         $odometer = $this->GetApiConnectedVehicle('odometer');
         if ($odometer != false) {

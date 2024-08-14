@@ -1052,7 +1052,6 @@ class VolvoIO extends IPSModule
             } else {
                 $postdata = http_build_query($postfields);
             }
-            $this->SendDebug(__FUNCTION__, '... postdata=' . $postdata, 0);
         } else {
             $postdata = '';
         }
@@ -1079,7 +1078,14 @@ class VolvoIO extends IPSModule
 
         $this->SendDebug(__FUNCTION__, 'http-' . $mode . ', url=' . $url, 0);
         $this->SendDebug(__FUNCTION__, '... headerfields=' . print_r($headerfields, true), 0);
-        $this->SendDebug(__FUNCTION__, '... postfields=' . print_r($postfields, true), 0);
+        switch ($mode) {
+            case 'POST':
+            case 'PUT':
+                $this->SendDebug(__FUNCTION__, '... postfields=' . print_r($postfields, true), 0);
+                break;
+            default:
+                break;
+        }
 
         if (IPS_SemaphoreEnter($this->SemaphoreID, self::$semaphoreTM) == false) {
             $this->SendDebug(__FUNCTION__, 'unable to lock sempahore ' . $this->SemaphoreID, 0);
