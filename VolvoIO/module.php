@@ -420,7 +420,7 @@ class VolvoIO extends IPSModule
 
     private function Login()
     {
-        $url = 'https://oauth.ipmagic.de/authorize/' . $this->oauthIdentifer . '?username=' . urlencode(IPS_GetLicensee());
+        $url = 'https://oauth.ipmagic.de/authorize/' . $this->oauthIdentifer . '?username=' . urlencode(IPS_GetLicensee()) . '&scope=' . rawurlencode(implode(' ', self::$scopes));
         $this->SendDebug(__FUNCTION__, 'url=' . $url, 0);
         return $url;
     }
@@ -904,7 +904,7 @@ class VolvoIO extends IPSModule
         $connection_type = $this->ReadPropertyInteger('connection_type');
         switch ($connection_type) {
             case self::$CONNECTION_OAUTH:
-                $refresh_token == $this->GetRefreshToken();
+                $refresh_token = $this->GetRefreshToken();
                 if ($refresh_token == '') {
                     $this->SendDebug(__FUNCTION__, 'has no refresh_token', 0);
                     $this->SetAccessToken('');
