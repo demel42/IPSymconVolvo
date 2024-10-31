@@ -23,7 +23,7 @@
 			"Username": "Benutzer",
 			"Password": "Passwort",
 
-			"Volvo login": "Volvi Login",
+			"Volvo login": "Volvo Login",
 			"Push \"Login at Volvo\" in the action part of this configuration form.":
 				"Drücken Sie \"bei Volvo anmelden\" im Aktionsteil dieses Konfigurationsformulars.",
 			"At the webpage from Volvo log in with your Volvo-ID and password.":
@@ -40,8 +40,21 @@
 
 			"__actions__": "",
 			"Login at Volvo": "bei Volvo anmelden",
+			"Perform login with code": "Anmeldung mit Code durchführen",
 			"Test access": "Zugang prüfen",
 			"Clear token": "Token löschen",
+
+			"__function__": "PerformLogin",
+			"Observe dokumentation": "Dokumentation beachten",
+			"Step 1": "Schritt 1",
+			"Request code": "Code anfordern",
+			"Step 2": "Schritt 2",
+			"Code (from mail)": "Code (aus Mail)",
+			"Complete login": "Anmeldung abschliessen",
+			"Login succeeded": "Anmeldung erfolgreich",
+			"Login failed: {$msg}": "Anmeldung fehlgeschlagen: {$msg}",
+			"Sent OTP to {$target}": "OTP gesendet an {$target}",
+			"Sent OTP": "OTP gesendet",
 
 			"__function__": "TestAccess",
 			"invalid account-data": "Ungültige Zugangsdaten",

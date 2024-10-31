@@ -67,6 +67,7 @@
 			"Instance is inactive (not logged in)": "Instanz ist inaktiv (nicht angemeldet)",
 			"Instance is inactive (invalid data)": "Instanz ist inaktiv (ungültige Daten)",
 			"Instance is inactive (api error)": "Instanz ist inaktiv (API-Fehler)",
+			"Instance is inactive (authentification flow error)": "Instanz ist inaktiv (Fehler im Authentifizierungsablauf)",
 
 			"__end__": ""
 		}

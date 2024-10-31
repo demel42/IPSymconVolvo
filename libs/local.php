@@ -11,6 +11,7 @@ trait VolvoLocalLib
     public static $IS_NOLOGIN = IS_EBASE + 14;
     public static $IS_INVALIDDATA = IS_EBASE + 15;
     public static $IS_APIERROR = IS_EBASE + 16;
+    public static $IS_AUTHERROR = IS_EBASE + 17;
 
     private function GetFormStatus()
     {
@@ -23,6 +24,7 @@ trait VolvoLocalLib
         $formStatus[] = ['code' => self::$IS_NOLOGIN, 'icon' => 'error', 'caption' => 'Instance is inactive (not logged in)'];
         $formStatus[] = ['code' => self::$IS_INVALIDDATA, 'icon' => 'error', 'caption' => 'Instance is inactive (invalid data)'];
         $formStatus[] = ['code' => self::$IS_APIERROR, 'icon' => 'error', 'caption' => 'Instance is inactive (api error)'];
+        $formStatus[] = ['code' => self::$IS_AUTHERROR, 'icon' => 'error', 'caption' => 'Instance is inactive (authentification flow error)'];
 
         return $formStatus;
     }
