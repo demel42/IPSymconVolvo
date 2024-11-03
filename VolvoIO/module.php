@@ -346,48 +346,46 @@ class VolvoIO extends IPSModule
 
         if ($connection_type == self::$CONNECTION_DEVELOPER) {
             $formActions[] = [
-                'type'      => 'ExpansionPanel',
-                'caption'   => 'Perform login with code',
-                'expanded'  => false,
-                'items'     => [
-                    [
-                        'type'    => 'Label',
-                        'caption' => 'Observe dokumentation',
+                'type'    => 'PopupButton',
+                'caption' => 'Perform login with code',
+                'popup'   => [
+                    'caption' => 'Perform login with code',
+                    'items'   => [
+                        [
+                            'type'      => 'RowLayout',
+                            'items'     => [
+                                [
+                                    'type'    => 'Label',
+                                    'caption' => 'Step 1',
+                                ],
+                                [
+                                    'type'    => 'Button',
+                                    'caption' => 'Request code',
+                                    'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "ManualRelogin1", "");',
+                                ],
+                            ],
+                        ],
+                        [
+                            'type'      => 'RowLayout',
+                            'items'     => [
+                                [
+                                    'type'    => 'Label',
+                                    'caption' => 'Step 2',
+                                ],
+                                [
+                                    'type'    => 'ValidationTextBox',
+                                    'name'    => 'otpCode',
+                                    'caption' => 'Code (from mail)'
+                                ],
+                                [
+                                    'type'    => 'Button',
+                                    'caption' => 'Complete login',
+                                    'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "ManualRelogin2", json_encode(["otpCode" => $otpCode]));',
+                                ],
+                            ],
+                        ],
                     ],
-                    [
-                        'type'      => 'RowLayout',
-                        'items'     => [
-                            [
-                                'type'    => 'Label',
-                                'caption' => 'Step 1',
-                            ],
-                            [
-                                'type'    => 'Button',
-                                'caption' => 'Request code',
-                                'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "ManualRelogin1", "");',
-                            ],
-                        ]
-                    ],
-                    [
-                        'type'      => 'RowLayout',
-                        'items'     => [
-                            [
-                                'type'    => 'Label',
-                                'caption' => 'Step 2',
-                            ],
-                            [
-                                'type'    => 'ValidationTextBox',
-                                'name'    => 'otpCode',
-                                'caption' => 'Code (from mail)'
-                            ],
-                            [
-                                'type'    => 'Button',
-                                'caption' => 'Complete login',
-                                'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "ManualRelogin2", json_encode(["otpCode" => $otpCode]));',
-                            ]
-                        ]
-                    ]
-                ]
+                ],
             ];
         }
 

@@ -125,7 +125,7 @@ Volvo.Speed
 
 ## 7. Versions-Historie
 
-- 1.1 @ 31.10.2024 15:53
+- 1.1 @ 03.11.2024 15:05
   - Implementierung der Anmeldung am Entwicklerkonto mit OTP
 
 - 1.0 @ 14.08.2024 12:48
