@@ -16,7 +16,7 @@
 
 ## 1. Funktionsumfang
 
-Volvo bietet für bestimmte Modelle eine Kommunikation via Internet/Volvo-Cloud an: ([Volvo Cars API](https://developer.volvocars.com)), diese steht nur für bestimmte Modelle zur Vefüdung ([siehe hier](https://developer.volvocars.com/apis/connected-vehicle/v2/overview/#availability)).
+Volvo bietet für bestimmte Modelle eine Kommunikation via Internet/Volvo-Cloud an: ([Volvo Cars API](https://developer.volvocars.com)), diese steht nur für bestimmte Modelle zur Vefügung ([siehe hier](https://developer.volvocars.com/apis/connected-vehicle/v2/overview/#availability)).
 
 Realisiert ist sowohl der Abruf der Daten als auch die relevanten Befehle.
 
@@ -35,7 +35,17 @@ Alternativ kann das Modul über [Module Control](https://www.symcon.de/service/d
 
 ## 4. Funktionsreferenz
 
-es gibt keine auslösbaren Funktionen
+`Volvo_StartClimatization(integer $InstanceID)`<br>
+Startet die Klimatisierung
+
+`Volvo_StopClimatization(integer $InstanceID)`<br>
+Stoppt eine laufende Klimatisierung
+
+`Volvo_LockDoors(integer $InstanceID)`<br>
+Versperrt die Türen
+
+`Volvo_UnlockDoors(integer $InstanceID)`<br>
+Entsperrt die Türen
 
 ## 5. Konfiguration
 
@@ -54,11 +64,18 @@ es gibt keine auslösbaren Funktionen
 | Passwort                | string  |              | Volvo-Konto: Passwort |
 | VCC API Key             | string  |              | Schlüssel der Volvo-API Application |
 
+**Hinweis: die Anmeldung via IP-Symcon funktioniert zur Zeit noch nicht!**
+
 #### Aktionen
 
 | Bezeichnung   | Beschreibung |
 | :------------ | :----------- |
+| Anmeldung mit Code durchführen | _[1]_ |
+| Bei Volvo anmelden | _[2]_ |
 | Zugang prüfen | Prüft, ob die Angaben korrekt sind |
+
+_[1]_: die Methode gilt für die Anmeldung bei dem [Volvo-Entwicklerkonto](https://developer.volvocars.com) mit dem *VCC API key* der eigenen *API application*. Hier wir nach Anforderung ein OTP (ein Code) an die im Konto hinterlegten Mailadresse geschickt, mitbdem die Anmeldung bestätigt wird.
+_[2]_: die Methode ist für die Anmeldung via IP-Symcon
 
 ### b. VolvoConfig
 
@@ -72,12 +89,16 @@ keine Einstellungen
 | :------------------------ | :------ | :----------- | :----------- |
 | Instanz deaktivieren      | boolean | false        | Instanz temporär deaktivieren |
 |                           |         |              | |
+| Fahrgestellnummer         |         |              | wird vom Konfigurator gesetzt |
+| Antriebsart               |         |              | wird vom Konfigurator gesetzt |
+|                           |         |              | |
 | Aktualisierungsintervall  | integer | 0            | Aktualisierungsintervall in Sekunden |
 
 #### Aktionen
 
 | Bezeichnung                | Beschreibung |
 | :------------------------- | :----------- |
+| Aktualisere Status         | Daten abrufen |
 
 ### Variablenprofile
 
