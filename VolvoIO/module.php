@@ -96,6 +96,8 @@ class VolvoIO extends IPSModule
 
         $this->RegisterPropertyBoolean('collectApiCallStats', true);
 
+        $this->RegisterAttributeInteger('ConnectionType', self::$CONNECTION_UNDEFINED);
+
         $this->RegisterAttributeString('ApiAccessToken', json_encode([]));
         $this->RegisterAttributeString('ApiRefreshToken', json_encode([]));
 
@@ -103,8 +105,6 @@ class VolvoIO extends IPSModule
         $this->RegisterAttributeString('ModuleStats', json_encode([]));
 
         $this->InstallVarProfiles(false);
-
-        $this->SetBuffer('ConnectionType', '');
 
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
     }
@@ -186,11 +186,9 @@ class VolvoIO extends IPSModule
         }
 
         $connection_type = $this->ReadPropertyInteger('connection_type');
-        if ($this->GetBuffer('ConnectionType') != $connection_type) {
-            if ($this->GetBuffer('ConnectionType') == '') {
-                $this->ClearToken();
-            }
-            $this->SetBuffer('ConnectionType', $connection_type);
+        if ($this->ReadAttributeInteger('ConnectionType') != $connection_type) {
+            $this->ClearToken();
+            $this->WriteAttributeInteger('ConnectionType', $connection_type);
         }
 
         $this->MaintainStatus(IS_ACTIVE);
