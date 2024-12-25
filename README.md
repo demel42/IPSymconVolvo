@@ -146,6 +146,10 @@ Volvo.Speed
 
 ## 7. Versions-Historie
 
+- 1.1.2 @ 25.12.2024 11:10
+  - Verbesserung: kosmetische Nacharbeiten
+  - update submodule CommonStubs
+
 - 1.1.1 @ 06.11.2024 10:02
   - Verbesserung: Anmeldung ist nun reboot-fest
 

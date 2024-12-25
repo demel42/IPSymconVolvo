@@ -359,7 +359,7 @@ class VolvoIO extends IPSModule
                                 [
                                     'type'    => 'Button',
                                     'caption' => 'Request code',
-                                    'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "ManualRelogin1", "");',
+                                    'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "Login_RequestOTP", "");',
                                 ],
                             ],
                         ],
@@ -378,7 +378,7 @@ class VolvoIO extends IPSModule
                                 [
                                     'type'    => 'Button',
                                     'caption' => 'Complete login',
-                                    'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "ManualRelogin2", json_encode(["otpCode" => $otpCode]));',
+                                    'onClick' => 'IPS_RequestAction(' . $this->InstanceID . ', "Login_ConfirmOTP", json_encode(["otpCode" => $otpCode]));',
                                 ],
                             ],
                         ],
@@ -420,7 +420,7 @@ class VolvoIO extends IPSModule
         return $formActions;
     }
 
-    private function ManualRelogin1()
+    private function Login_RequestOTP()
     {
         $this->SendDebug(__FUNCTION__, '', 0);
         $msg = '';
@@ -689,7 +689,7 @@ class VolvoIO extends IPSModule
         $this->PopupMessage($msg);
     }
 
-    private function ManualRelogin2(string $params)
+    private function Login_ConfirmOTP(string $params)
     {
         $jparams = json_decode($params, true);
         $otpCode = isset($jparams['otpCode']) ? $jparams['otpCode'] : '';
@@ -1093,11 +1093,11 @@ class VolvoIO extends IPSModule
             case 'ClearToken':
                 $this->ClearToken();
                 break;
-            case 'ManualRelogin1':
-                $this->ManualRelogin1();
+            case 'Login_RequestOTP':
+                $this->Login_RequestOTP();
                 break;
-            case 'ManualRelogin2':
-                $this->ManualRelogin2($value);
+            case 'Login_ConfirmOTP':
+                $this->Login_ConfirmOTP($value);
                 break;
             default:
                 $r = false;
