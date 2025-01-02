@@ -146,6 +146,9 @@ Volvo.Speed
 
 ## 7. Versions-Historie
 
+- 1.1.3 @ 02.01.2025 14:28
+  - Fix: fehlende Übersetzung nachgeführt
+
 - 1.1.2 @ 25.12.2024 11:10
   - Verbesserung: kosmetische Nacharbeiten
   - update submodule CommonStubs

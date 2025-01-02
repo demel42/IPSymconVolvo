@@ -3,6 +3,9 @@
 		"de": {
 			"Volvo vehicle": "Volvo Fahrzeug",
 
+			"__function__": "CheckModuleConfiguration",
+			"A registered VIN is required": "Eine registrierte Fahrgestellnummer ist erforderlich",
+
 			"__properties__": "",
 			"Disable instance": "Instanz deaktivieren",
 
