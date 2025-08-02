@@ -1362,8 +1362,9 @@ class VolvoIO extends IPSModule
         $url = 'https://volvoid.eu.volvocars.com/as/token.oauth2';
 
         $headerfields = [
-            'Content-Type'  => 'application/x-www-form-urlencoded',
             'Authorization' => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
+            'Content-Type'  => 'application/x-www-form-urlencoded',
+            'Accept'        => 'application/json',
         ];
         $header = $this->build_header($headerfields);
 
@@ -1444,12 +1445,14 @@ class VolvoIO extends IPSModule
                 $err = 'missing field "access_token"';
             }
         }
+        /*
         if ($statuscode == 0) {
             if (isset($jbody['refresh_token']) == false) {
                 $statuscode = self::$IS_INVALIDDATA;
                 $err = 'missing field "refresh_token"';
             }
         }
+         */
         if ($statuscode == 0) {
             if (isset($jbody['expires_in']) == false) {
                 $statuscode = self::$IS_INVALIDDATA;
@@ -1462,8 +1465,10 @@ class VolvoIO extends IPSModule
             $expiration = time() + $jbody['expires_in'];
             $this->SetAccessToken($access_token, $expiration);
 
-            $refresh_token = $jbody['refresh_token'];
-            $this->SetRefreshToken($refresh_token);
+            if (isset($jbody['refresh_token'])) {
+                $refresh_token = $jbody['refresh_token'];
+                $this->SetRefreshToken($refresh_token);
+            }
         }
 
         $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
