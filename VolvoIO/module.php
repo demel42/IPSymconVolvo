@@ -12,7 +12,7 @@ class VolvoIO extends IPSModule
 
     private $oauthIdentifer = 'volvo';
 
-    private static $user_agent = 'okhttp/4.10.0';
+    private static $user_agent = 'vca-android/5.58.0';
 
     private static $client_id = 'h4Yf0b';
     private static $client_secret = 'U8YkSbVl6xwsg5YQqZfrgVmIaDphOsy1PCaUsicQto3TR5kwaJse4AZdgfIfcLyw';
@@ -439,8 +439,8 @@ class VolvoIO extends IPSModule
 
         $headerfields = [
             'Authorization'   => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'User-Agent'      => 'vca-android/5.37.0',
-            'Content-Type'    => 'application/json',
+            'User-Agent'      => self::$user_agent,
+            'Content-Type'    => 'application/json; charset=utf-8',
             'Accept'          => 'application/json',
             'Accept-Encoding' => 'gzip',
         ];
@@ -533,6 +533,7 @@ class VolvoIO extends IPSModule
         }
 
         $url = $jbody['_links']['checkUsernamePassword']['href'] . '?action=checkUsernamePassword';
+        $url = preg_replace('#^http://#', 'https://', $url);
 
         $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
         if ($collectApiCallStats) {
@@ -554,8 +555,8 @@ class VolvoIO extends IPSModule
 
         $headerfields = [
             'Authorization'   => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'User-Agent'      => 'vca-android/5.37.0',
-            'Content-Type'    => 'application/json',
+            'User-Agent'      => self::$user_agent,
+            'Content-Type'    => 'application/json; charset=utf-8',
             'Accept'          => 'application/json',
             'Accept-Encoding' => 'gzip',
             'x-xsrf-header'   => 'PingFederate',
@@ -678,6 +679,7 @@ class VolvoIO extends IPSModule
         }
 
         $url = $jbody['_links']['checkOtp']['href'] . '?action=checkOtp';
+        $url = preg_replace('#^http://#', 'https://', $url);
         $this->SetBuffer('NextUrl', $url);
         $this->SendDebug(__FUNCTION__, $pre . '   => save url=' . $url, 0);
 
@@ -718,8 +720,8 @@ class VolvoIO extends IPSModule
 
         $headerfields = [
             'Authorization'   => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'User-Agent'      => 'vca-android/5.37.0',
-            'Content-Type'    => 'application/json',
+            'User-Agent'      => self::$user_agent,
+            'Content-Type'    => 'application/json; charset=utf-8',
             'Accept'          => 'application/json',
             'Accept-Encoding' => 'gzip',
             'x-xsrf-header'   => 'PingFederate',
@@ -837,14 +839,15 @@ class VolvoIO extends IPSModule
         }
 
         $url = $jbody['_links']['continueAuthentication']['href'] . '?action=continueAuthentication';
+        $url = preg_replace('#^http://#', 'https://', $url);
 
         $pre = 'step 2';
         $this->SendDebug(__FUNCTION__, '*** ' . $pre, 0);
 
         $headerfields = [
             'Authorization'   => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'User-Agent'      => 'vca-android/5.37.0',
-            'Content-Type'    => 'application/json',
+            'User-Agent'      => self::$user_agent,
+            'Content-Type'    => 'application/json; charset=utf-8',
             'Accept'          => 'application/json',
             'Accept-Encoding' => 'gzip',
             'x-xsrf-header'   => 'PingFederate',
@@ -963,7 +966,7 @@ class VolvoIO extends IPSModule
 
         $headerfields = [
             'Authorization'   => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'User-Agent'      => 'vca-android/5.37.0',
+            'User-Agent'      => self::$user_agent,
             'Content-Type'    => 'application/x-www-form-urlencoded',
             'Accept'          => 'application/json',
         ];

@@ -146,6 +146,9 @@ Volvo.Speed
 
 ## 7. Versions-Historie
 
+- 1.2 @ 02.08.2025 10:23
+  - Fix: aktuelle API-Version legt Wert auf https (obwohl in den Daten nur http geliefert wird)
+
 - 1.1.3 @ 02.01.2025 14:28
   - Fix: fehlende Übersetzung nachgeführt
 
