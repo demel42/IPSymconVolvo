@@ -1283,16 +1283,22 @@ class VolvoIO extends IPSModule
     private function SetRefreshToken($refresh_token = '')
     {
         if ($refresh_token == '') {
+            /*
             $expiration = 0;
+             */
             $this->SendDebug(__FUNCTION__, 'clear refresh_token', 0);
         } else {
+            /*
             $expiration = time() + (7 * 24 * 60 * 60);
             $this->SendDebug(__FUNCTION__, 'new refresh_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
+             */
         }
         $jtoken = [
             'tstamp'        => time(),
             'refresh_token' => $refresh_token,
+            /*
             'expiration'    => $expiration,
+             */
         ];
         $this->WriteAttributeString('ApiRefreshToken', json_encode($jtoken));
     }
@@ -1302,6 +1308,7 @@ class VolvoIO extends IPSModule
         $jtoken = @json_decode($this->ReadAttributeString('ApiRefreshToken'), true);
         if ($jtoken != false) {
             $refresh_token = isset($jtoken['refresh_token']) ? $jtoken['refresh_token'] : '';
+            /*
             $expiration = isset($jtoken['expiration']) ? $jtoken['expiration'] : 0;
             if ($expiration < time()) {
                 $this->SendDebug(__FUNCTION__, 'refresh_token expired', 0);
@@ -1310,6 +1317,7 @@ class VolvoIO extends IPSModule
             if ($refresh_token != '') {
                 $this->SendDebug(__FUNCTION__, 'old refresh_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
             }
+             */
         } else {
             $this->SendDebug(__FUNCTION__, 'no saved refresh_token', 0);
             $refresh_token = '';
