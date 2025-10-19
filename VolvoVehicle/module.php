@@ -356,15 +356,6 @@ class VolvoVehicle extends IPSModule
             }
         }
 
-        if (isset($vehicleData['resources']) == false) {
-            $resources = $this->GetApiExtendedVehicle('resources');
-            if ($resources) {
-                $this->SendDebug(__FUNCTION__, 'resources=' . print_r($resources, true), 0);
-                $vehicleData['resources'] = $resources;
-                $vehicleData_chg = true;
-            }
-        }
-
         if ($vehicleData_chg) {
             $this->SetBuffer('VehicleData', json_encode($vehicleData));
             $this->SendDebug(__FUNCTION__, 'VehicleData=' . print_r($vehicleData, true), 0);
@@ -1102,28 +1093,6 @@ class VolvoVehicle extends IPSModule
             'DataID'   => '{83DF672B-CA66-5372-A632-E9A5406332A7}', // an VolvoIO
             'CallerID' => $this->InstanceID,
             'Function' => 'GetApiLocation',
-            'vin'      => $vin,
-            'detail'   => $detail,
-        ];
-        $data = $this->SendDataToParent(json_encode($SendData));
-        $this->SendDebug(__FUNCTION__, 'SendData=' . json_encode($SendData) . ', data=' . $data, 0);
-        $jdata = @json_decode($data, true);
-        return $jdata;
-    }
-
-    private function GetApiExtendedVehicle($detail = '')
-    {
-        if ($this->CheckStatus() == self::$STATUS_INVALID) {
-            $this->SendDebug(__FUNCTION__, $this->GetStatusText() . ' => skip', 0);
-            return;
-        }
-
-        $vin = $this->ReadPropertyString('vin');
-
-        $SendData = [
-            'DataID'   => '{83DF672B-CA66-5372-A632-E9A5406332A7}', // an VolvoIO
-            'CallerID' => $this->InstanceID,
-            'Function' => 'GetApiExtendedVehicle',
             'vin'      => $vin,
             'detail'   => $detail,
         ];
