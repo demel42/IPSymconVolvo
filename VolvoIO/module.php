@@ -264,8 +264,8 @@ class VolvoIO extends IPSModule
 
         if ($connection_type == self::$CONNECTION_DEVELOPER) {
             $formElements[] = [
-                'type'    => 'ExpansionPanel',
-                'items'   => [
+                'type'  => 'ExpansionPanel',
+                'items' => [
                     [
                         'name'    => 'vcc_api_key',
                         'type'    => 'ValidationTextBox',
@@ -350,8 +350,8 @@ class VolvoIO extends IPSModule
                     'caption' => 'Perform login with code',
                     'items'   => [
                         [
-                            'type'      => 'RowLayout',
-                            'items'     => [
+                            'type'  => 'RowLayout',
+                            'items' => [
                                 [
                                     'type'    => 'Label',
                                     'caption' => 'Step 1',
@@ -364,8 +364,8 @@ class VolvoIO extends IPSModule
                             ],
                         ],
                         [
-                            'type'      => 'RowLayout',
-                            'items'     => [
+                            'type'  => 'RowLayout',
+                            'items' => [
                                 [
                                     'type'    => 'Label',
                                     'caption' => 'Step 2',
@@ -408,10 +408,10 @@ class VolvoIO extends IPSModule
         }
 
         $formActions[] = [
-            'type'      => 'ExpansionPanel',
-            'caption'   => 'Expert area',
-            'expanded'  => false,
-            'items'     => $items,
+            'type'     => 'ExpansionPanel',
+            'caption'  => 'Expert area',
+            'expanded' => false,
+            'items'    => $items,
         ];
 
         $formActions[] = $this->GetInformationFormAction();
@@ -429,11 +429,11 @@ class VolvoIO extends IPSModule
         $this->SendDebug(__FUNCTION__, '*** ' . $pre, 0);
 
         $params = [
-            'client_id'         => self::$client_id,
-            'response_type'     => 'code',
-            'response_mode'     => 'pi.flow',
-            'acr_values'        => 'urn:volvoid:aal:bronze:2sv',
-            'scope'             => implode(' ', self::$scopes),
+            'client_id'     => self::$client_id,
+            'response_type' => 'code',
+            'response_mode' => 'pi.flow',
+            'acr_values'    => 'urn:volvoid:aal:bronze:2sv',
+            'scope'         => implode(' ', self::$scopes),
         ];
         $url = $this->build_url('https://volvoid.eu.volvocars.com/as/authorization.oauth2', $params);
 
@@ -965,10 +965,10 @@ class VolvoIO extends IPSModule
         $url = 'https://volvoid.eu.volvocars.com/as/token.oauth2';
 
         $headerfields = [
-            'Authorization'   => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'User-Agent'      => self::$user_agent,
-            'Content-Type'    => 'application/x-www-form-urlencoded',
-            'Accept'          => 'application/json',
+            'Authorization' => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
+            'User-Agent'    => self::$user_agent,
+            'Content-Type'  => 'application/x-www-form-urlencoded',
+            'Accept'        => 'application/json',
         ];
         $header = $this->build_header($headerfields);
 
@@ -1283,22 +1283,11 @@ class VolvoIO extends IPSModule
     private function SetRefreshToken($refresh_token = '')
     {
         if ($refresh_token == '') {
-            /*
-            $expiration = 0;
-             */
             $this->SendDebug(__FUNCTION__, 'clear refresh_token', 0);
-        } else {
-            /*
-            $expiration = time() + (7 * 24 * 60 * 60);
-            $this->SendDebug(__FUNCTION__, 'new refresh_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
-             */
         }
         $jtoken = [
             'tstamp'        => time(),
             'refresh_token' => $refresh_token,
-            /*
-            'expiration'    => $expiration,
-             */
         ];
         $this->WriteAttributeString('ApiRefreshToken', json_encode($jtoken));
     }
@@ -1308,16 +1297,6 @@ class VolvoIO extends IPSModule
         $jtoken = @json_decode($this->ReadAttributeString('ApiRefreshToken'), true);
         if ($jtoken != false) {
             $refresh_token = isset($jtoken['refresh_token']) ? $jtoken['refresh_token'] : '';
-            /*
-            $expiration = isset($jtoken['expiration']) ? $jtoken['expiration'] : 0;
-            if ($expiration < time()) {
-                $this->SendDebug(__FUNCTION__, 'refresh_token expired', 0);
-                $refresh_token = '';
-            }
-            if ($refresh_token != '') {
-                $this->SendDebug(__FUNCTION__, 'old refresh_token, valid until ' . date('d.m.y H:i:s', $expiration), 0);
-            }
-             */
         } else {
             $this->SendDebug(__FUNCTION__, 'no saved refresh_token', 0);
             $refresh_token = '';
@@ -1788,7 +1767,7 @@ class VolvoIO extends IPSModule
     private function GetVehicles()
     {
         $headerfields = [
-            'Accept'        => 'application/json',
+            'Accept' => 'application/json',
         ];
 
         $body = $this->do_HttpRequest('connected-vehicle/v2/vehicles', [], $headerfields, [], 'GET');
@@ -1803,7 +1782,7 @@ class VolvoIO extends IPSModule
         }
 
         $headerfields = [
-            'Accept'        => 'application/json',
+            'Accept' => 'application/json',
         ];
 
         $body = $this->do_HttpRequest($uri, [], $headerfields, [], 'GET');
@@ -1818,8 +1797,8 @@ class VolvoIO extends IPSModule
         }
 
         $headerfields = [
-            'Accept'        => 'application/json',
-            'Content-Type'  => 'application/json',
+            'Accept'       => 'application/json',
+            'Content-Type' => 'application/json',
         ];
 
         $body = $this->do_HttpRequest($uri, [], $headerfields, $postfields, 'POST');
@@ -1834,7 +1813,8 @@ class VolvoIO extends IPSModule
         }
 
         $headerfields = [
-            'Accept'        => 'application/vnd.volvocars.api.energy.vehicledata.v1+json',
+            'Accept'       => 'application/json',
+            'Content-Type' => 'application/json',
         ];
 
         $body = $this->do_HttpRequest($uri, [], $headerfields, [], 'GET');
@@ -1849,7 +1829,7 @@ class VolvoIO extends IPSModule
         }
 
         $headerfields = [
-            'Accept'        => 'application/json',
+            'Accept' => 'application/json',
         ];
 
         $body = $this->do_HttpRequest($uri, [], $headerfields, [], 'GET');
