@@ -42,12 +42,12 @@ class VolvoIO extends IPSModule
         'conve:warnings',
         'conve:windows_status',
 
-		'energy:capability:read',
-		'energy:state:read',
+        'energy:capability:read',
+        'energy:state:read',
 
         'vehicle:attributes',
 
-		'location:read',
+        'location:read',
     ];
 
     private static $semaphoreTM = 5 * 1000;
@@ -518,9 +518,6 @@ class VolvoIO extends IPSModule
             }
         }
 
-        $url = $jbody['_links']['checkUsernamePassword']['href'] . '?action=checkUsernamePassword';
-        $url = preg_replace('#^http://#', 'https://', $url);
-
         $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
         if ($collectApiCallStats) {
             $this->ApiCallCollect($url, $err, $statuscode);
@@ -535,6 +532,9 @@ class VolvoIO extends IPSModule
             $this->PopupMessage($msg);
             return false;
         }
+
+        $url = $jbody['_links']['checkUsernamePassword']['href'] . '?action=checkUsernamePassword';
+        $url = preg_replace('#^http://#', 'https://', $url);
 
         $pre = 'step 2';
         $this->SendDebug(__FUNCTION__, '*** ' . $pre, 0);
