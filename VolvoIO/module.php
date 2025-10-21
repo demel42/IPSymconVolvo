@@ -47,7 +47,9 @@ class VolvoIO extends IPSModule
 
         'vehicle:attributes',
 
-        'location:read',
+        // Error bei der Anmeldung: "The requested scope is invalid, unknown, malformed, or exceeds that which the client is permitted to request"
+        // 'location:read',
+
     ];
 
     private static $semaphoreTM = 5 * 1000;
