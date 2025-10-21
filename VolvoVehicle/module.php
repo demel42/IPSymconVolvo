@@ -784,29 +784,29 @@ class VolvoVehicle extends IPSModule
             if ($energy_state != false) {
                 $this->SendDebug(__FUNCTION__, 'state=' . print_r($energy_state, true), 0);
 
-                $batteryChargeLevel = $this->GetArrayElem($energy_state, 'data.batteryChargeLevel.value', 0, $fnd);
+                $batteryChargeLevel = $this->GetArrayElem($energy_state, 'batteryChargeLevel.value', 0, $fnd);
                 if ($fnd) {
-                    $this->SendDebug(__FUNCTION__, '... BatteryChargeLevel (state:data.batteryChargeLevel.value)=' . $batteryChargeLevel, 0);
+                    $this->SendDebug(__FUNCTION__, '... BatteryChargeLevel (state:batteryChargeLevel.value)=' . $batteryChargeLevel, 0);
                     $this->SaveValue('BatteryChargeLevel', $batteryChargeLevel, $chg);
                 }
 
-                $chargerConnectionStatus = $this->GetArrayElem($energy_state, 'data.chargerConnectionStatus.value', '', $fnd);
+                $chargerConnectionStatus = $this->GetArrayElem($energy_state, 'chargerConnectionStatus.value', '', $fnd);
                 if ($fnd) {
                     $chargerConnectionStatus = $this->MapConnectionState($chargerConnectionStatus);
-                    $this->SendDebug(__FUNCTION__, '... ConnectionState (state:data.chargerConnectionStatus.value)=' . $chargerConnectionStatus . '/' . $connectionState, 0);
+                    $this->SendDebug(__FUNCTION__, '... ConnectionState (state:chargerConnectionStatus.value)=' . $chargerConnectionStatus . '/' . $connectionState, 0);
                     $this->SaveValue('ConnectionState', $connectionState, $chg);
                 }
 
-                $chargingStatus = $this->GetArrayElem($energy_state, 'data.chargingStatus.value', '', $fnd);
+                $chargingStatus = $this->GetArrayElem($energy_state, 'chargingStatus.value', '', $fnd);
                 if ($fnd) {
                     $chargingState = $this->MapChargingState($chargingStatus);
-                    $this->SendDebug(__FUNCTION__, '... ChargingState (state:data.chargingStatus.value)=' . $chargingStatus . '/' . $chargingState, 0);
+                    $this->SendDebug(__FUNCTION__, '... ChargingState (state:chargingStatus.value)=' . $chargingStatus . '/' . $chargingState, 0);
                     $this->SaveValue('ChargingState', $chargingState, $chg);
                 }
 
-                $estimatedChargingTime = $this->GetArrayElem($energy_state, 'data.estimatedChargingTimeToTargetBatteryChargeLevel.value', 0, $fnd); // minutes
+                $estimatedChargingTime = $this->GetArrayElem($energy_state, 'estimatedChargingTimeToTargetBatteryChargeLevel.value', 0, $fnd); // minutes
                 if ($fnd) {
-                    $this->SendDebug(__FUNCTION__, '... EstimatedChargingTime (state:data.estimatedChargingTimeToTargetBatteryChargeLevel.value)=' . $estimatedChargingTime, 0);
+                    $this->SendDebug(__FUNCTION__, '... EstimatedChargingTime (state:estimatedChargingTimeToTargetBatteryChargeLevel.value)=' . $estimatedChargingTime, 0);
                     $this->SaveValue('EstimatedChargingTime', $estimatedChargingTime, $chg);
                 }
             }

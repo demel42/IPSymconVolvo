@@ -146,7 +146,7 @@ Volvo.Speed
 
 ## 7. Versions-Historie
 
-- 1.3 @ 21.10.2025 08:53
+- 1.3 @ 21.10.2025 20:41
   - Fix: Änderungen an der API zum 31.12.2025 nachgeführt ("/energy" nun als "v2" und "/extended-vehicle" in "/connected-vehicle" enthalten)
 
 - 1.2 @ 10.08.2025 20:04
