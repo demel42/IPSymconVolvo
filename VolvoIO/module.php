@@ -19,16 +19,7 @@ class VolvoIO extends IPSModule
 
     private static $scopes = [
         'openid',
-        'email',
-        'profile',
-        'care_by_volvo:financial_information:invoice:read',
-        'care_by_volvo:financial_information:payment_method',
-        'care_by_volvo:subscription:read',
-        'customer:attributes',
-        'customer:attributes:write',
-        'order:attributes',
-        'vehicle:attributes',
-        'tsp_customer_api:all',
+
         'conve:brake_status',
         'conve:climatization_start_stop',
         'conve:command_accessibility',
@@ -50,18 +41,13 @@ class VolvoIO extends IPSModule
         'conve:vehicle_relation',
         'conve:warnings',
         'conve:windows_status',
-        'energy:battery_charge_level',
-        'energy:charging_connection_status',
-        'energy:charging_system_status',
-        'energy:electric_range',
-        'energy:estimated_charging_time',
-        'energy:recharge_status',
+
+		'energy:capability:read'
+		'energy:state:read',
+
         'vehicle:attributes',
 
-        // 'conve:battery_charge_level',
-        // 'conve:engine_start_stop',
-        // 'energy:charging_current_limit',
-        // 'energy:target_battery_level',
+		'location:read',
     ];
 
     private static $semaphoreTM = 5 * 1000;
