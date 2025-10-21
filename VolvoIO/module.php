@@ -42,7 +42,7 @@ class VolvoIO extends IPSModule
         'conve:warnings',
         'conve:windows_status',
 
-		'energy:capability:read'
+		'energy:capability:read',
 		'energy:state:read',
 
         'vehicle:attributes',
