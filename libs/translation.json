@@ -16,8 +16,7 @@
 
 			"__variableprofile__": "Volvo.ConnectionStatus",
 			"unspecified": "unbekannt",
-			"connected AC": "AC angeschlossen",
-			"connected DC": "DC angeschlossen",
+			"connected": "angeschlossen",
 			"disconnected": "nicht verbunden",
 			"fault": "Fehler",
 
@@ -27,7 +26,7 @@
 			"scheduled": "geplant",
 			"charging": "lädt",
 			"done": "beendet",
-			"fault": "Fehler",
+			"error": "Fehler",
 
 			"__variableprofile__": "Volvo.CentrallockState",
 			"unknown": "unbekannt",

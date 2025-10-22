@@ -62,6 +62,29 @@ class VolvoVehicle extends IPSModule
         return $r;
     }
 
+    private function CheckModuleUpdate(array $oldInfo, array $newInfo)
+    {
+        $r = [];
+
+        if ($this->version2num($oldInfo) < $this->version2num('1.3')) {
+            $r[] = $this->Translate('Adjust variableprofile \'Volvo.ConnectionState\'');
+        }
+
+        return $r;
+    }
+
+    private function CompleteModuleUpdate(array $oldInfo, array $newInfo)
+    {
+        if ($this->version2num($oldInfo) < $this->version2num('1.3')) {
+            if (IPS_VariableProfileExists('Volvo.ConnectionState')) {
+                IPS_DeleteVariableProfile('Volvo.ConnectionState');
+            }
+            $this->InstallVarProfiles(false);
+        }
+
+        return '';
+    }
+
     public function MessageSink($timestamp, $senderID, $message, $data)
     {
         parent::MessageSink($timestamp, $senderID, $message, $data);
@@ -792,7 +815,7 @@ class VolvoVehicle extends IPSModule
 
                 $chargerConnectionStatus = $this->GetArrayElem($energy_state, 'chargerConnectionStatus.value', '', $fnd);
                 if ($fnd) {
-                    $chargerConnectionStatus = $this->MapConnectionState($chargerConnectionStatus);
+                    $connectionState = $this->MapConnectionState($chargerConnectionStatus);
                     $this->SendDebug(__FUNCTION__, '... ConnectionState (state:chargerConnectionStatus.value)=' . $chargerConnectionStatus . '/' . $connectionState, 0);
                     $this->SaveValue('ConnectionState', $connectionState, $chg);
                 }

@@ -81,10 +81,9 @@ trait VolvoLocalLib
 
     // Ladekabel/Stecker
     private static $VOLVO_CONNECTION_STATE_UNSPECIFIED = 0;
-    private static $VOLVO_CONNECTION_STATE_CONNECTED_AC = 1;
-    private static $VOLVO_CONNECTION_STATE_CONNECTED_DC = 2;
-    private static $VOLVO_CONNECTION_STATE_DISCONNECTED = 3;
-    private static $VOLVO_CONNECTION_STATE_FAULT = 4;
+    private static $VOLVO_CONNECTION_STATE_CONNECTED = 1;
+    private static $VOLVO_CONNECTION_STATE_DISCONNECTED = 2;
+    private static $VOLVO_CONNECTION_STATE_FAULT = 3;
 
     // Ladezustand
     private static $VOLVO_CHARGING_STATE_UNSPECIFIED = 0;
@@ -92,7 +91,7 @@ trait VolvoLocalLib
     private static $VOLVO_CHARGING_STATE_SCHEDULED = 2;
     private static $VOLVO_CHARGING_STATE_CHARGING = 3;
     private static $VOLVO_CHARGING_STATE_DONE = 4;
-    private static $VOLVO_CHARGING_STATE_FAULT = 5;
+    private static $VOLVO_CHARGING_STATE_ERROR = 5;
 
     // Zentralverriegelung
     private static $VOLVO_CENTRALLOCK_STATE_UNKNOWN = 0;
@@ -143,8 +142,7 @@ trait VolvoLocalLib
 
         $associations = [
             ['Wert' => self::$VOLVO_CONNECTION_STATE_UNSPECIFIED, 'Name' => $this->Translate('unspecified'), 'Farbe' => 0xEE0000],
-            ['Wert' => self::$VOLVO_CONNECTION_STATE_CONNECTED_AC, 'Name' => $this->Translate('connected AC'), 'Farbe' => 0x228B22],
-            ['Wert' => self::$VOLVO_CONNECTION_STATE_CONNECTED_DC, 'Name' => $this->Translate('connected DC'), 'Farbe' => 0x228B22],
+            ['Wert' => self::$VOLVO_CONNECTION_STATE_CONNECTED, 'Name' => $this->Translate('connected'), 'Farbe' => 0x228B22],
             ['Wert' => self::$VOLVO_CONNECTION_STATE_DISCONNECTED, 'Name' => $this->Translate('disconnected'), 'Farbe' => -1],
             ['Wert' => self::$VOLVO_CONNECTION_STATE_FAULT, 'Name' => $this->Translate('fault'), 'Farbe' => 0xEE0000],
         ];
@@ -156,7 +154,7 @@ trait VolvoLocalLib
             ['Wert' => self::$VOLVO_CHARGING_STATE_SCHEDULED, 'Name' => $this->Translate('scheduled'), 'Farbe' => -1],
             ['Wert' => self::$VOLVO_CHARGING_STATE_CHARGING, 'Name' => $this->Translate('charging'), 'Farbe' => 0x228B22],
             ['Wert' => self::$VOLVO_CHARGING_STATE_DONE, 'Name' => $this->Translate('done'), 'Farbe' => 0x0000FF],
-            ['Wert' => self::$VOLVO_CHARGING_STATE_FAULT, 'Name' => $this->Translate('fault'), 'Farbe' => 0xEE0000],
+            ['Wert' => self::$VOLVO_CHARGING_STATE_ERROR, 'Name' => $this->Translate('error'), 'Farbe' => 0xEE0000],
         ];
         $this->CreateVarProfile('Volvo.ChargingState', VARIABLETYPE_INTEGER, '', 0, 0, 0, 0, '', $associations, $reInstall);
 
@@ -270,11 +268,9 @@ trait VolvoLocalLib
     private function MapConnectionState($s)
     {
         $str2enum = [
-            'CONNECTION_STATUS_UNSPECIFIED'  => self::$VOLVO_CONNECTION_STATE_UNSPECIFIED,
-            'CONNECTION_STATUS_CONNECTED_AC' => self::$VOLVO_CONNECTION_STATE_CONNECTED_AC,
-            'CONNECTION_STATUS_CONNECTED_DC' => self::$VOLVO_CONNECTION_STATE_CONNECTED_DC,
-            'CONNECTION_STATUS_DISCONNECTED' => self::$VOLVO_CONNECTION_STATE_DISCONNECTED,
-            'CONNECTION_STATUS_FAULT'        => self::$VOLVO_CONNECTION_STATE_FAULT,
+            'CONNECTED'    => self::$VOLVO_CONNECTION_STATE_CONNECTED,
+            'DISCONNECTED' => self::$VOLVO_CONNECTION_STATE_DISCONNECTED,
+            'FAULT'        => self::$VOLVO_CONNECTION_STATE_FAULT,
         ];
 
         if (isset($str2enum[$s])) {
@@ -289,12 +285,11 @@ trait VolvoLocalLib
     private function MapChargingState($s)
     {
         $str2enum = [
-            'CHARGING_SYSTEM_UNSPECIFIED' => self::$VOLVO_CHARGING_STATE_UNSPECIFIED,
-            'CHARGING_SYSTEM_IDLE'        => self::$VOLVO_CHARGING_STATE_IDLE,
-            'CHARGING_SYSTEM_SCHEDULED'   => self::$VOLVO_CHARGING_STATE_SCHEDULED,
-            'CHARGING_SYSTEM_CHARGING'    => self::$VOLVO_CHARGING_STATE_CHARGING,
-            'CHARGING_SYSTEM_DONE'        => self::$VOLVO_CHARGING_STATE_DONE,
-            'CHARGING_SYSTEM_FAULT'       => self::$VOLVO_CHARGING_STATE_FAULT,
+            'IDLE'      => self::$VOLVO_CHARGING_STATE_IDLE,
+            'SCHEDULED' => self::$VOLVO_CHARGING_STATE_SCHEDULED,
+            'CHARGING'  => self::$VOLVO_CHARGING_STATE_CHARGING,
+            'DONE'      => self::$VOLVO_CHARGING_STATE_DONE,
+            'ERROR'     => self::$VOLVO_CHARGING_STATE_ERROR,
         ];
 
         if (isset($str2enum[$s])) {

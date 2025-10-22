@@ -6,12 +6,15 @@
 			"__function__": "CheckModuleConfiguration",
 			"A registered VIN is required": "Eine registrierte Fahrgestellnummer ist erforderlich",
 
+			"__function__": "CheckModuleUpdate",
+			"Adjust variableprofile 'Volvo.ConnectionState'": "Variablenprofil 'Volvo.ConnectionState' anpassen",
+
 			"__properties__": "",
 			"Disable instance": "Instanz deaktivieren",
 
 			"Vehicle data": "Fahrzeugdaten",
-            "VIN": "Fahrgestellnummer",
-            "mode of driving": "Antriebsart",
+			"VIN": "Fahrgestellnummer",
+			"mode of driving": "Antriebsart",
 
 			"Update interval": "Aktualisierungsintervall",
 			"Minutes": "Minuten",
