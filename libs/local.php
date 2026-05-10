@@ -190,23 +190,23 @@ trait VolvoLocalLib
         ];
         $this->CreateVarProfile('Volvo.TyreState', VARIABLETYPE_INTEGER, '', 0, 0, 0, 0, '', $associations, $reInstall);
 
-        $this->CreateVarProfile('Volvo.Mileage', VARIABLETYPE_INTEGER, ' km', 0, 0, 0, 0, 'Distance', '', $reInstall);
-        $this->CreateVarProfile('Volvo.FuelAmount', VARIABLETYPE_FLOAT, ' l', 0, 0, 0, 0, 'Gauge', '', $reInstall);
-        $this->CreateVarProfile('Volvo.Range', VARIABLETYPE_FLOAT, ' km', 0, 0, 0, 0, 'Gauge', '', $reInstall);
+        $this->CreateVarProfile('Volvo.Mileage', VARIABLETYPE_INTEGER, ' km', 0, 0, 0, 0, 'Distance', [], $reInstall);
+        $this->CreateVarProfile('Volvo.FuelAmount', VARIABLETYPE_FLOAT, ' l', 0, 0, 0, 0, 'Gauge', [], $reInstall);
+        $this->CreateVarProfile('Volvo.Range', VARIABLETYPE_FLOAT, ' km', 0, 0, 0, 0, 'Gauge', [], $reInstall);
 
-        $this->CreateVarProfile('Volvo.Location', VARIABLETYPE_FLOAT, ' °', 0, 0, 0, 5, 'Car', '', $reInstall);
-        $this->CreateVarProfile('Volvo.Altitude', VARIABLETYPE_INTEGER, ' m', 0, 360, 0, 0, 'WindDirection', '', $reInstall);
-        $this->CreateVarProfile('Volvo.Heading', VARIABLETYPE_INTEGER, ' °', 0, 360, 0, 0, 'WindDirection', '', $reInstall);
+        $this->CreateVarProfile('Volvo.Location', VARIABLETYPE_FLOAT, ' °', 0, 0, 0, 5, 'Car', [], $reInstall);
+        $this->CreateVarProfile('Volvo.Altitude', VARIABLETYPE_INTEGER, ' m', 0, 360, 0, 0, 'WindDirection', [], $reInstall);
+        $this->CreateVarProfile('Volvo.Heading', VARIABLETYPE_INTEGER, ' °', 0, 360, 0, 0, 'WindDirection', [], $reInstall);
 
-        $this->CreateVarProfile('Volvo.BatteryCapacity', VARIABLETYPE_FLOAT, ' kWh', 0, 0, 0, 1, '', '', $reInstall);
-        $this->CreateVarProfile('Volvo.BatteryChargeLevel', VARIABLETYPE_FLOAT, ' %', 0, 0, 0, 0, '', '', $reInstall);
+        $this->CreateVarProfile('Volvo.BatteryCapacity', VARIABLETYPE_FLOAT, ' kWh', 0, 0, 0, 1, '', [], $reInstall);
+        $this->CreateVarProfile('Volvo.BatteryChargeLevel', VARIABLETYPE_FLOAT, ' %', 0, 0, 0, 0, '', [], $reInstall);
 
-        $this->CreateVarProfile('Volvo.Minutes', VARIABLETYPE_INTEGER, ' min', 0, 0, 0, 0, '', '', $reInstall);
+        $this->CreateVarProfile('Volvo.Minutes', VARIABLETYPE_INTEGER, ' min', 0, 0, 0, 0, '', [], $reInstall);
 
-        $this->CreateVarProfile('Volvo.FuelConsumption', VARIABLETYPE_FLOAT, ' l/100km', 0, 0, 0, 1, 'Gauge', '', $reInstall);
-        $this->CreateVarProfile('Volvo.EnergyConsumption', VARIABLETYPE_FLOAT, ' kWh/100km', 0, 0, 0, 1, 'Gauge', '', $reInstall);
-        $this->CreateVarProfile('Volvo.Speed', VARIABLETYPE_FLOAT, ' km/h', 0, 0, 0, 0, 'Gauge', '', $reInstall);
-        $this->CreateVarProfile('Volvo.Distance', VARIABLETYPE_FLOAT, ' km', 0, 0, 0, 1, 'Distance', '', $reInstall);
+        $this->CreateVarProfile('Volvo.FuelConsumption', VARIABLETYPE_FLOAT, ' l/100km', 0, 0, 0, 1, 'Gauge', [], $reInstall);
+        $this->CreateVarProfile('Volvo.EnergyConsumption', VARIABLETYPE_FLOAT, ' kWh/100km', 0, 0, 0, 1, 'Gauge', [], $reInstall);
+        $this->CreateVarProfile('Volvo.Speed', VARIABLETYPE_FLOAT, ' km/h', 0, 0, 0, 0, 'Gauge', [], $reInstall);
+        $this->CreateVarProfile('Volvo.Distance', VARIABLETYPE_FLOAT, ' km', 0, 0, 0, 1, 'Distance', [], $reInstall);
     }
 
     private function DriveTypeMapping()

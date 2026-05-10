@@ -306,7 +306,7 @@ class VolvoVehicle extends IPSModule
         return $formActions;
     }
 
-    private function SetUpdateInterval(int $min = null)
+    private function SetUpdateInterval(?int $min = null)
     {
         if ($min == '') {
             $min = $this->ReadPropertyInteger('update_interval');

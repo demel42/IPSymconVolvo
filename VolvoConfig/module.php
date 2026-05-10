@@ -115,7 +115,7 @@ class VolvoConfig extends IPSModule
         }
 
         $guid = '{6C6B7979-37AA-69B7-2E19-7E10D92A97E3}'; // VolvoVehicle
-        $instIDs = IPS_GetInstanceListByModuleID($guid);
+        $instIDs = (array) IPS_GetInstanceListByModuleID($guid);
 
         if (is_array($vehicles)) {
             foreach ($vehicles as $vehicle) {
