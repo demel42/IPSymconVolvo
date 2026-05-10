@@ -123,7 +123,11 @@ class VolvoIO extends IPSModule
                     $this->SendDebug(__FUNCTION__, '"vcc_api_key" is needed', 0);
                     $r[] = $this->Translate('\'VCC api key\' of the Volvo-API application must be specified');
                 }
-                // no break
+                break;
+            case self::$CONNECTION_OAUTH:
+                $this->SendDebug(__FUNCTION__, '"connection_type" ' . $connection_type . '(OAUTH) is not currently operational', 0);
+                $r[] = $this->Translate('Connection type \'via IP-Symcon Connect\' is currently not operational');
+                break;
             default:
                 break;
         }
@@ -233,6 +237,7 @@ class VolvoIO extends IPSModule
         $formElements[] = [
             'type'    => 'Select',
             'name'    => 'connection_type',
+            'width'   => '400px',
             'caption' => 'Connection type',
             'options' => [
                 [
@@ -240,7 +245,7 @@ class VolvoIO extends IPSModule
                     'value'   => self::$CONNECTION_UNDEFINED
                 ],
                 [
-                    'caption' => 'via IP-Symcon Connect',
+                    'caption' => 'via IP-Symcon Connect (not operational)',
                     'value'   => self::$CONNECTION_OAUTH
                 ],
                 [

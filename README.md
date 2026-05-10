@@ -146,9 +146,10 @@ Volvo.Speed
 
 ## 7. Versions-Historie
 
-- 1.4 @ 10.05.2026 09:4
+- 1.4 @ 10.05.2026 11:48
   - Fix: Änderung von deprecated php code
   - Fix: Änderung der API bei der Verarbeitung des OTP-Codes im Login nachgeführt
+  - Veränderung: Verbindungstyp "über IP-Symcon" wird als derzeit nicht funktionsfähig ausgewiesen
   - update submodule CommonStubs
 
 - 1.3 @ 22.10.2025 08:39

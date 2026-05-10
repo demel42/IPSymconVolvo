@@ -8,14 +8,15 @@
 			"Username of the Volvo account must be specified": "Benutzername des Volvo-Kontos muss angegeben sein",
 			"Password of the Volvo account must be specified": "Passwort des Volvo-Kontos muss angegeben sein",
 			"'VCC api key' of the Volvo-API application must be specified": "'VCC API Key' der Volvo-API-Applikation muss angegeben sein",
+			"Connection type 'via IP-Symcon Connect' is currently not operational": "Verbindungstyp 'über IP-Symcon Connect' ist derzeit nicht funktionsfähig",
 
 			"__elements__": "",
 			"Disable instance": "Instanz deaktivieren",
 
 			"Connection type": "Verbindungstyp",
 			"__options__": "connection_type",
-            "Please select a connection type": "Bitte einen Verbindungstyp auswählen",
-			"via IP-Symcon Connect": "über IP-Symcon Connect",
+			"Please select a connection type": "Bitte einen Verbindungstyp auswählen",
+			"via IP-Symcon Connect (not operational)": "über IP-Symcon Connect (nicht funktionsfähig)",
 			"with Volvo developer key": "mit Volvo Entwickler-Schlüssel",
 
 			"Account data": "Zugangsdaten",
