@@ -148,7 +148,7 @@ Volvo.Speed
 
 - 1.4 @ 10.05.2026 09:4
   - Fix: Änderung von deprecated php code
-  - Fix: Änderung der API bei der Veraⅺbeitung des OTP-Codes im Login nachgeführt
+  - Fix: Änderung der API bei der Verarbeitung des OTP-Codes im Login nachgeführt
   - update submodule CommonStubs
 
 - 1.3 @ 22.10.2025 08:39
