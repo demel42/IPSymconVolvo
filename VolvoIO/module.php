@@ -97,6 +97,14 @@ class VolvoIO extends IPSModule
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
     }
 
+    public function Destroy()
+    {
+        if (IPS_InstanceExists($this->InstanceID) == false) {
+            $this->CleanupOAuth();
+        }
+        parent::Destroy();
+    }
+
     private function CheckModuleConfiguration()
     {
         $r = [];

@@ -146,10 +146,11 @@ Volvo.Speed
 
 ## 7. Versions-Historie
 
-- 1.4 @ 10.05.2026 11:48
+- 1.4 @ 11.05.2026 14:55
   - Fix: Änderung von deprecated php code
   - Fix: Änderung der API bei der Verarbeitung des OTP-Codes im Login nachgeführt
-  - Veränderung: Verbindungstyp "über IP-Symcon" wird als derzeit nicht funktionsfähig ausgewiesen
+  - Verbesserung: Verbindungstyp "über IP-Symcon" wird als "derzeit nicht funktionsfähig" ausgewiesen
+  - Verbesserung: beim Löschen einer Instanz werden die zugehörigen WebOAuth-Einträge ebenfalls gelöscht
   - update submodule CommonStubs
 
 - 1.3 @ 22.10.2025 08:39
