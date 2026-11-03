@@ -435,11 +435,17 @@ class VolvoIO extends IPSModule
     // Die Anmeldung ist an einen eigenen EC-Schlüssel gebunden (DPoP, RFC 9449)
     private function DpopCreateKey()
     {
-        $key = openssl_pkey_new([
-            'private_key_type' => OPENSSL_KEYTYPE_EC,
-            'curve_name'       => 'prime256v1',
-        ]);
-        if ($key === false || openssl_pkey_export($key, $pem) === false) {
+        // openssl_pkey_new() braucht eine openssl.cnf, die Symcon nicht überall mitbringt.
+        // Daher wird der P-256-Schlüssel direkt aus einer Zufallszahl gebildet, den öffentlichen Teil berechnet openssl beim Laden.
+        $order = hex2bin('ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551');
+        do {
+            $secret = random_bytes(32);
+        } while (strcmp($secret, $order) >= 0 || ltrim($secret, "\0") === '');
+
+        $der = "\x30\x31\x02\x01\x01\x04\x20" . $secret . "\xa0\x0a\x06\x08\x2a\x86\x48\xce\x3d\x03\x01\x07";
+        $pem = "-----BEGIN EC PRIVATE KEY-----\n" . chunk_split(base64_encode($der), 64, "\n") . "-----END EC PRIVATE KEY-----\n";
+
+        if (openssl_pkey_get_private($pem) === false) {
             $this->SendDebug(__FUNCTION__, 'unable to create key: ' . openssl_error_string(), 0);
             return '';
         }
@@ -631,8 +637,12 @@ class VolvoIO extends IPSModule
     {
         $this->SendDebug(__FUNCTION__, '', 0);
 
-        if (function_exists('openssl_pkey_new') == false) {
+        if (function_exists('openssl_pkey_get_private') == false) {
             return $this->AuthFailed(__FUNCTION__, self::$IS_AUTHERROR, 'php-extension "openssl" is missing');
+        }
+        // schon vor dem Versand der Mail prüfen, ob der Schlüssel erzeugt werden kann
+        if ($this->DpopCreateKey() == '') {
+            return $this->AuthFailed(__FUNCTION__, self::$IS_AUTHERROR, 'unable to create DPoP key');
         }
 
         $verifier = $this->base64url(random_bytes(48));
