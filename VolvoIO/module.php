@@ -14,8 +14,13 @@ class VolvoIO extends IPSModule
 
     private static $user_agent = 'vca-android/5.58.0';
 
-    private static $client_id = 'h4Yf0b';
-    private static $client_secret = 'U8YkSbVl6xwsg5YQqZfrgVmIaDphOsy1PCaUsicQto3TR5kwaJse4AZdgfIfcLyw';
+    // öffentlicher Client der Volvo Cars App: Authorization Code + PKCE, Tokens sind an einen DPoP-Schlüssel gebunden
+    // Volvo hat den bisherigen Client "h4Yf0b" (pi.flow) am 26.10.2026 abgeschaltet
+    private static $client_id = 'mo2qy9h_10';
+    private static $redirect_uri = 'vca://www.volvocars.com/l/vca/oauth/callback';
+
+    private static $authorization_url = 'https://volvoid.eu.volvocars.com/as/authorization.oauth2';
+    private static $token_url = 'https://volvoid.eu.volvocars.com/as/token.oauth2';
 
     private static $scopes = [
         'openid',
@@ -28,7 +33,6 @@ class VolvoIO extends IPSModule
         'conve:diagnostics_workshop',
         'conve:doors_status',
         'conve:engine_status',
-        'conve:environment',
         'conve:fuel_status',
         'conve:honk_flash',
         'conve:lock',
@@ -42,14 +46,15 @@ class VolvoIO extends IPSModule
         'conve:warnings',
         'conve:windows_status',
 
-        'energy:capability:read',
+        'energy:battery_charge_level',
+        'energy:charging_connection_status',
+        'energy:charging_system_status',
+        'energy:electric_range',
+        'energy:estimated_charging_time',
+        'energy:recharge_status',
         'energy:state:read',
 
-        'vehicle:attributes',
-
-        // Error bei der Anmeldung: "The requested scope is invalid, unknown, malformed, or exceeds that which the client is permitted to request"
-        // 'location:read',
-
+        'location:read',
     ];
 
     private static $semaphoreTM = 5 * 1000;
@@ -88,6 +93,7 @@ class VolvoIO extends IPSModule
 
         $this->RegisterAttributeString('ApiAccessToken', json_encode([]));
         $this->RegisterAttributeString('ApiRefreshToken', json_encode([]));
+        $this->RegisterAttributeString('ApiDpopKey', '');
 
         $this->RegisterAttributeString('UpdateInfo', json_encode([]));
         $this->RegisterAttributeString('ModuleStats', json_encode([]));
@@ -421,447 +427,329 @@ class VolvoIO extends IPSModule
         return $formActions;
     }
 
+    private function base64url(string $data)
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
+    // Die Anmeldung ist an einen eigenen EC-Schlüssel gebunden (DPoP, RFC 9449)
+    private function DpopCreateKey()
+    {
+        $key = openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_EC,
+            'curve_name'       => 'prime256v1',
+        ]);
+        if ($key === false || openssl_pkey_export($key, $pem) === false) {
+            $this->SendDebug(__FUNCTION__, 'unable to create key: ' . openssl_error_string(), 0);
+            return '';
+        }
+        return $pem;
+    }
+
+    private function DpopProof(string $pem, string $method, string $url)
+    {
+        $key = openssl_pkey_get_private($pem);
+        if ($key === false) {
+            $this->SendDebug(__FUNCTION__, 'unable to load key: ' . openssl_error_string(), 0);
+            return '';
+        }
+        $ec = openssl_pkey_get_details($key)['ec'];
+
+        $header = [
+            'typ' => 'dpop+jwt',
+            'alg' => 'ES256',
+            'jwk' => [
+                'kty' => 'EC',
+                'crv' => 'P-256',
+                'x'   => $this->base64url(str_pad($ec['x'], 32, "\0", STR_PAD_LEFT)),
+                'y'   => $this->base64url(str_pad($ec['y'], 32, "\0", STR_PAD_LEFT)),
+            ],
+        ];
+        $payload = [
+            'htm' => $method,
+            'htu' => $url,
+            'iat' => time(),
+            'jti' => bin2hex(random_bytes(16)),
+        ];
+        $input = $this->base64url(json_encode($header, JSON_UNESCAPED_SLASHES)) . '.' . $this->base64url(json_encode($payload, JSON_UNESCAPED_SLASHES));
+
+        if (openssl_sign($input, $der, $key, OPENSSL_ALGO_SHA256) == false) {
+            $this->SendDebug(__FUNCTION__, 'unable to sign: ' . openssl_error_string(), 0);
+            return '';
+        }
+
+        // openssl liefert die Signatur als DER, ES256 verlangt r und s mit je 32 Byte
+        $pos = 2;
+        $signature = '';
+        for ($i = 0; $i < 2; $i++) {
+            $len = ord($der[$pos + 1]);
+            $part = ltrim(substr($der, $pos + 2, $len), "\0");
+            $signature .= str_pad($part, 32, "\0", STR_PAD_LEFT);
+            $pos += 2 + $len;
+        }
+
+        return $input . '.' . $this->base64url($signature);
+    }
+
+    private function AuthResolveUrl(string $location, string $base)
+    {
+        if (preg_match('#^[a-z][a-z0-9+.-]*:#i', $location)) {
+            return $location;
+        }
+        $p = parse_url($base);
+        $root = $p['scheme'] . '://' . $p['host'] . (isset($p['port']) ? ':' . $p['port'] : '');
+        if (substr($location, 0, 2) == '//') {
+            return $p['scheme'] . ':' . $location;
+        }
+        if (substr($location, 0, 1) == '/') {
+            return $root . $location;
+        }
+        $path = isset($p['path']) ? $p['path'] : '/';
+        return $root . substr($path, 0, strrpos($path, '/') + 1) . $location;
+    }
+
+    // Verhält sich wie ein Browser: Cookies je Host und Weiterleitungen, bis eine Seite kommt oder Volvo zur App zurückleitet
+    private function AuthFetch(string $method, string $url, array $form, array &$cookies)
+    {
+        for ($hop = 0; $hop < 10; $hop++) {
+            $url = preg_replace('#^http://#', 'https://', $url);
+            if (preg_match('#^https://([a-z0-9-]+\.)*volvocars\.com(:\d+)?([/?]|$)#i', $url) == false) {
+                return ['err' => 'unexpected url ' . strtok($url, '?')];
+            }
+            $host = parse_url($url, PHP_URL_HOST);
+
+            $headerfields = [
+                'User-Agent' => self::$user_agent,
+            ];
+            if (isset($cookies[$host]) && count($cookies[$host]) > 0) {
+                $headerfields['Cookie'] = implode('; ', $cookies[$host]);
+            }
+            if ($method == 'POST') {
+                $headerfields['Content-Type'] = 'application/x-www-form-urlencoded';
+            }
+
+            $curl_opts = [
+                CURLOPT_URL            => $url,
+                CURLOPT_HTTPHEADER     => $this->build_header($headerfields),
+                CURLOPT_HEADER         => true,
+                CURLOPT_FOLLOWLOCATION => false,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 30,
+            ];
+            if ($method == 'POST') {
+                $curl_opts[CURLOPT_POST] = true;
+                $curl_opts[CURLOPT_POSTFIELDS] = http_build_query($form);
+            }
+
+            // keine Formularwerte ausgeben, darin steht das Passwort
+            $this->SendDebug(__FUNCTION__, 'http-' . $method . ', url=' . strtok($url, '?'), 0);
+
+            $time_start = microtime(true);
+
+            $ch = curl_init();
+            curl_setopt_array($ch, $curl_opts);
+            $response = curl_exec($ch);
+            $cerrno = curl_errno($ch);
+            $cerror = $cerrno ? curl_error($ch) : '';
+            $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curl_info = curl_getinfo($ch);
+            if (IPS_GetKernelVersion() < 8.5) {
+                curl_close($ch);
+            }
+
+            $duration = round(microtime(true) - $time_start, 2);
+            $this->SendDebug(__FUNCTION__, ' => errno=' . $cerrno . ', httpcode=' . $httpcode . ', duration=' . $duration . 's', 0);
+
+            if ($cerrno) {
+                return ['err' => 'got curl-errno ' . $cerrno . ' (' . $cerror . ')'];
+            }
+
+            $head = substr($response, 0, $curl_info['header_size']);
+            $body = substr($response, $curl_info['header_size']);
+
+            if (preg_match_all('/^Set-Cookie:\s*([^=;\s]+)=([^;\r\n]*)/mi', $head, $matches, PREG_SET_ORDER)) {
+                foreach ($matches as $match) {
+                    if ($match[2] == '') {
+                        unset($cookies[$host][$match[1]]);
+                    } else {
+                        $cookies[$host][$match[1]] = $match[1] . '=' . $match[2];
+                    }
+                }
+            }
+
+            if ($httpcode >= 300 && $httpcode < 400 && preg_match('/^Location:\s*(\S+)/mi', $head, $match)) {
+                $location = $match[1];
+                if (strpos($location, self::$redirect_uri) === 0) {
+                    parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+                    return [
+                        'code' => isset($query['code']) ? $query['code'] : '',
+                        'err'  => isset($query['error_description']) ? $query['error_description'] : (isset($query['error']) ? $query['error'] : ''),
+                    ];
+                }
+                $url = $this->AuthResolveUrl($location, $url);
+                $method = 'GET';
+                continue;
+            }
+
+            if ($httpcode >= 400) {
+                return ['err' => 'got http-code ' . $httpcode, 'html' => $body];
+            }
+
+            return ['html' => $body];
+        }
+
+        return ['err' => 'too many redirects'];
+    }
+
+    // Die Anmeldeseiten kommen von Keycloak, die Angaben stehen im eingebetteten kcContext
+    private function AuthParsePage(string $html)
+    {
+        $page = [];
+        foreach (['pageId', 'loginAction', 'summary'] as $key) {
+            $page[$key] = '';
+            if (preg_match('/"' . $key . '":\s*"((?:[^"\\\\]|\\\\.)*)"/', $html, $match)) {
+                $value = json_decode('"' . $match[1] . '"');
+                $page[$key] = html_entity_decode(is_string($value) ? $value : $match[1], ENT_QUOTES | ENT_HTML5);
+            }
+        }
+        return $page;
+    }
+
+    private function AuthFailed(string $function, int $statuscode, string $err)
+    {
+        $this->SendDebug($function, $err, 0);
+        $this->MaintainStatus($statuscode);
+        $this->SetBuffer('Cookies', '');
+        $this->SetBuffer('NextUrl', '');
+        $this->SetBuffer('CodeVerifier', '');
+        $msg = $this->TranslateFormat('Login failed: {$msg}', ['{$msg}' => $err]);
+        $this->PopupMessage($msg);
+        return false;
+    }
+
     private function Login_RequestOTP()
     {
         $this->SendDebug(__FUNCTION__, '', 0);
-        $msg = '';
 
-        $pre = 'step 1';
-        $this->SendDebug(__FUNCTION__, '*** ' . $pre, 0);
+        if (function_exists('openssl_pkey_new') == false) {
+            return $this->AuthFailed(__FUNCTION__, self::$IS_AUTHERROR, 'php-extension "openssl" is missing');
+        }
+
+        $verifier = $this->base64url(random_bytes(48));
 
         $params = [
-            'client_id'     => self::$client_id,
-            'response_type' => 'code',
-            'response_mode' => 'pi.flow',
-            'acr_values'    => 'urn:volvoid:aal:bronze:2sv',
-            'scope'         => implode(' ', self::$scopes),
+            'client_id'             => self::$client_id,
+            'redirect_uri'          => self::$redirect_uri,
+            'response_type'         => 'code',
+            'scope'                 => implode(' ', self::$scopes),
+            'code_challenge'        => $this->base64url(hash('sha256', $verifier, true)),
+            'code_challenge_method' => 'S256',
+            'acr_values'            => 'urn:volvoid:aal:bronze:2sv',
         ];
-        $url = $this->build_url('https://volvoid.eu.volvocars.com/as/authorization.oauth2', $params);
+        $url = $this->build_url(self::$authorization_url, $params);
 
-        $headerfields = [
-            'Authorization'   => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'User-Agent'      => self::$user_agent,
-            'Content-Type'    => 'application/json; charset=utf-8',
-            'Accept'          => 'application/json',
-            'Accept-Encoding' => 'gzip',
-        ];
-        $header = $this->build_header($headerfields);
+        $cookies = [];
 
-        $curl_opts = [
-            CURLOPT_URL            => $url,
-            CURLOPT_HTTPHEADER     => $header,
-            CURLOPT_HEADER         => true,
-            CURLINFO_HEADER_OUT    => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 30,
-        ];
-
-        $this->SendDebug(__FUNCTION__, $pre . '  http-GET, url=' . $url, 0);
-        $this->SendDebug(__FUNCTION__, $pre . '  ... headerfields=' . print_r($headerfields, true), 0);
-
-        $time_start = microtime(true);
-
-        $ch = curl_init();
-        curl_setopt_array($ch, $curl_opts);
-        $response = curl_exec($ch);
-        $cerrno = curl_errno($ch);
-        $cerror = $cerrno ? curl_error($ch) : '';
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curl_info = curl_getinfo($ch);
-        if (IPS_GetKernelVersion() < 8.5) {
-            curl_close($ch);
+        $this->SendDebug(__FUNCTION__, '*** step 1: open login page', 0);
+        $ret = $this->AuthFetch('GET', $url, [], $cookies);
+        $page = $this->AuthParsePage(isset($ret['html']) ? $ret['html'] : '');
+        $this->SendDebug(__FUNCTION__, 'page=' . print_r($page, true), 0);
+        $err = isset($ret['err']) && $ret['err'] != '' ? $ret['err'] : '';
+        if ($err == '' && ($page['pageId'] != 'login' || $page['loginAction'] == '')) {
+            $err = 'unexpected login page "' . $page['pageId'] . '"';
         }
-
-        $duration = round(microtime(true) - $time_start, 2);
-        $this->SendDebug(__FUNCTION__, $pre . '   => errno=' . $cerrno . ', httpcode=' . $httpcode . ', duration=' . $duration . 's', 0);
-        $this->SendDebug(__FUNCTION__, $pre . '   => response=' . $response, 0);
-
-        $statuscode = 0;
-        $err = '';
-
-        if ($cerrno) {
-            $statuscode = self::$IS_SERVERERROR;
-            $err = 'got curl-errno ' . $cerrno . ' (' . $cerror . ')';
-        } else {
-            $header_size = $curl_info['header_size'];
-            $head = substr($response, 0, $header_size);
-            $body = substr($response, $header_size);
-            $this->SendDebug(__FUNCTION__, $pre . '   => head=' . $head, 0);
-            $this->SendDebug(__FUNCTION__, $pre . '   => body=' . $body, 0);
-
-            if (preg_match_all('/^Set-Cookie:\s+(.*);/miU', $head, $matches)) {
-                $cookies = implode('; ', $matches[1]);
-            } else {
-                $cookies = '';
-            }
-            $this->SendDebug(__FUNCTION__, $pre . '   => cookies=' . $cookies, 0);
-
-            if ($httpcode != 200) {
-                $statuscode = self::$IS_HTTPERROR;
-                $err = 'got http-code ' . $httpcode;
-            }
-        }
-        if ($statuscode == 0) {
-            $jbody = json_decode($body, true);
-            if ($jbody == false) {
-                $statuscode = self::$IS_INVALIDDATA;
-                $err = 'invalid/malformed data';
-            } else {
-                $this->SendDebug(__FUNCTION__, $pre . '   => jbody=' . print_r($jbody, true), 0);
-            }
-        }
-        if ($statuscode == 0) {
-            if (isset($jbody['status']) == false) {
-                $statuscode = self::$IS_AUTHERROR;
-                $err = 'missing field "status"';
-            }
-        }
-        if ($statuscode == 0) {
-            $auth_state = $jbody['status'];
-            if ($auth_state != 'USERNAME_PASSWORD_REQUIRED') {
-                $statuscode = self::$IS_AUTHERROR;
-                if (isset($jbody['details'][0]['userMessage'])) {
-                    $err = $jbody['details'][0]['userMessage'];
-                } else {
-                    $err = 'unexpected state "' . $auth_state . '"';
-                }
-            }
-        }
-        if ($statuscode == 0) {
-            if (isset($jbody['_links']['checkUsernamePassword']['href']) == false) {
-                $statuscode = self::$IS_AUTHERROR;
-                $err = 'missing field "_links.checkUsernamePassword.href"';
-            }
-        }
-
         $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
         if ($collectApiCallStats) {
-            $this->ApiCallCollect($url, $err, $statuscode);
+            $this->ApiCallCollect(self::$authorization_url, $err, $err != '' ? self::$IS_AUTHERROR : 0);
+        }
+        if ($err != '') {
+            return $this->AuthFailed(__FUNCTION__, self::$IS_AUTHERROR, $err);
         }
 
-        if ($statuscode) {
-            $this->SendDebug(__FUNCTION__, $pre . '  ' . $err, 0);
-            $this->MaintainStatus($statuscode);
-            $this->SetBuffer('Cookies', '');
-            $this->SetBuffer('NextUrl', '');
-            $msg = $this->TranslateFormat('Login failed: {$msg}', ['{$msg}' => $err]);
-            $this->PopupMessage($msg);
-            return false;
-        }
-
-        $url = $jbody['_links']['checkUsernamePassword']['href'] . '?action=checkUsernamePassword';
-        $url = preg_replace('#^http://#', 'https://', $url);
-
-        $pre = 'step 2';
-        $this->SendDebug(__FUNCTION__, '*** ' . $pre, 0);
-
-        $headerfields = [
-            'Authorization'   => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'User-Agent'      => self::$user_agent,
-            'Content-Type'    => 'application/json; charset=utf-8',
-            'Accept'          => 'application/json',
-            'Accept-Encoding' => 'gzip',
-            'x-xsrf-header'   => 'PingFederate',
+        $this->SendDebug(__FUNCTION__, '*** step 2: send username and password', 0);
+        $form = [
+            'username'     => $this->ReadPropertyString('username'),
+            'password'     => $this->ReadPropertyString('password'),
+            'credentialId' => '',
         ];
-        $header = $this->build_header($headerfields);
-
-        $username = $this->ReadPropertyString('username');
-        $password = $this->ReadPropertyString('password');
-
-        $postfields = [
-            'username' => $username,
-            'password' => $password,
-        ];
-        $postdata = json_encode($postfields);
-
-        $curl_opts = [
-            CURLOPT_URL            => $url,
-            CURLOPT_HTTPHEADER     => $header,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $postdata,
-            CURLOPT_HEADER         => true,
-            CURLINFO_HEADER_OUT    => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 30,
-            CURLOPT_COOKIE         => $cookies,
-        ];
-
-        $this->SendDebug(__FUNCTION__, $pre . '  http-POST, url=' . $url, 0);
-        $this->SendDebug(__FUNCTION__, $pre . '  ... headerfields=' . print_r($headerfields, true), 0);
-        $this->SendDebug(__FUNCTION__, $pre . '  ... postfields=' . print_r($postfields, true), 0);
-
-        $time_start = microtime(true);
-
-        $ch = curl_init();
-        curl_setopt_array($ch, $curl_opts);
-        $response = curl_exec($ch);
-        $cerrno = curl_errno($ch);
-        $cerror = $cerrno ? curl_error($ch) : '';
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curl_info = curl_getinfo($ch);
-        if (IPS_GetKernelVersion() < 8.5) {
-            curl_close($ch);
+        $ret = $this->AuthFetch('POST', $page['loginAction'], $form, $cookies);
+        $page = $this->AuthParsePage(isset($ret['html']) ? $ret['html'] : '');
+        $this->SendDebug(__FUNCTION__, 'page=' . print_r($page, true), 0);
+        $err = isset($ret['err']) && $ret['err'] != '' ? $ret['err'] : '';
+        if ($err == '' && ($page['pageId'] != 'login-otp-email' || $page['loginAction'] == '')) {
+            $err = $page['summary'] != '' ? $page['summary'] : 'no request for OTP, page "' . $page['pageId'] . '"';
         }
-
-        $duration = round(microtime(true) - $time_start, 2);
-        $this->SendDebug(__FUNCTION__, $pre . '   => errno=' . $cerrno . ', httpcode=' . $httpcode . ', duration=' . $duration . 's', 0);
-        $this->SendDebug(__FUNCTION__, $pre . '   => response=' . $response, 0);
-
-        $statuscode = 0;
-        $err = '';
-
-        if ($cerrno) {
-            $statuscode = self::$IS_SERVERERROR;
-            $err = 'got curl-errno ' . $cerrno . ' (' . $cerror . ')';
-        } else {
-            $header_size = $curl_info['header_size'];
-            $head = substr($response, 0, $header_size);
-            $body = substr($response, $header_size);
-            $this->SendDebug(__FUNCTION__, $pre . '   => head=' . $head, 0);
-            $this->SendDebug(__FUNCTION__, $pre . '   => body=' . $body, 0);
-
-            if (preg_match_all('/^Set-Cookie:\s+(.*);/miU', $head, $matches)) {
-                $cookies = implode('; ', $matches[1]);
-            } else {
-                $cookies = '';
-            }
-            $this->SetBuffer('Cookies', $cookies);
-            $this->SendDebug(__FUNCTION__, $pre . '   => save cookies=' . $cookies, 0);
-
-            if ($httpcode != 200) {
-                $statuscode = self::$IS_HTTPERROR;
-                $err = 'got http-code ' . $httpcode;
-            }
-        }
-        if ($statuscode == 0) {
-            $jbody = json_decode($body, true);
-            if ($jbody == false) {
-                $statuscode = self::$IS_INVALIDDATA;
-                $err = 'invalid/malformed data';
-            } else {
-                $this->SendDebug(__FUNCTION__, $pre . '   => jbody=' . print_r($jbody, true), 0);
-            }
-        }
-        if ($statuscode == 0) {
-            if (isset($jbody['status']) == false) {
-                $statuscode = self::$IS_AUTHERROR;
-                $err = 'missing field "status"';
-            }
-        }
-        if ($statuscode == 0) {
-            $auth_state = $jbody['status'];
-            if ($auth_state != 'OTP_REQUIRED') {
-                $statuscode = self::$IS_AUTHERROR;
-                if (isset($jbody['details'][0]['userMessage'])) {
-                    $err = $jbody['details'][0]['userMessage'];
-                } else {
-                    $err = 'unexpected state "' . $auth_state . '"';
-                }
-            }
-        }
-        if ($statuscode == 0) {
-            if (isset($jbody['_links']['checkOtp']['href']) == false) {
-                $statuscode = self::$IS_AUTHERROR;
-                $err = 'missing field "_links.checkOtp.href"';
-            }
-        }
-
-        $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
         if ($collectApiCallStats) {
-            $this->ApiCallCollect($url, $err, $statuscode);
+            $this->ApiCallCollect(strtok($page['loginAction'], '?'), $err, $err != '' ? self::$IS_AUTHERROR : 0);
+        }
+        if ($err != '') {
+            return $this->AuthFailed(__FUNCTION__, self::$IS_AUTHERROR, $err);
         }
 
-        if ($statuscode) {
-            $this->SendDebug(__FUNCTION__, $pre . '  ' . $err, 0);
-            $this->MaintainStatus($statuscode);
-            $this->SetBuffer('Cookies', '');
-            $this->SetBuffer('NextUrl', '');
-            $msg = $this->TranslateFormat('Login failed: {$msg}', ['{$msg}' => $err]);
-            $this->PopupMessage($msg);
-            return false;
-        }
+        $this->SetBuffer('Cookies', json_encode($cookies));
+        $this->SetBuffer('NextUrl', $page['loginAction']);
+        $this->SetBuffer('CodeVerifier', $verifier);
 
-        $url = $jbody['_links']['checkOtp']['href'] . '?action=checkOtp';
-        $url = preg_replace('#^http://#', 'https://', $url);
-        $this->SetBuffer('NextUrl', $url);
-        $this->SendDebug(__FUNCTION__, $pre . '   => save url=' . $url, 0);
-
-        if (isset($jbody['devices'][0]['type']) && isset($jbody['devices'][0]['target'])) {
-            $msg = $this->TranslateFormat('Sent OTP to {$target}', ['{$type}' => $jbody['devices'][0]['type'], '{$target}' => $jbody['devices'][0]['target']]);
-        } else {
-            $msg = $this->TranslateFormat('Sent OTP');
-        }
-        $this->PopupMessage($msg);
+        $this->PopupMessage($this->Translate('Sent OTP'));
     }
 
     private function Login_ConfirmOTP(string $params)
     {
         $jparams = json_decode($params, true);
-        $otpCode = isset($jparams['otpCode']) ? $jparams['otpCode'] : '';
+        $otpCode = isset($jparams['otpCode']) ? trim($jparams['otpCode']) : '';
         if ($otpCode == '') {
             $this->SendDebug(__FUNCTION__, 'no otpCode', 0);
             return false;
         }
-        $this->SendDebug(__FUNCTION__, 'otpCode=' . $otpCode, 0);
-
-        $pre = 'step 1';
-        $this->SendDebug(__FUNCTION__, '*** ' . $pre, 0);
 
         $url = $this->GetBuffer('NextUrl');
-        if ($url == '') {
-            $this->SendDebug(__FUNCTION__, $pre . '  no saved url', 0);
+        $verifier = $this->GetBuffer('CodeVerifier');
+        $cookies = json_decode($this->GetBuffer('Cookies'), true);
+        if ($url == '' || $verifier == '' || is_array($cookies) == false) {
+            $this->SendDebug(__FUNCTION__, 'no saved login', 0);
             return false;
         }
-        $this->SendDebug(__FUNCTION__, $pre . '  use saved url=' . $url, 0);
 
-        $cookies = $this->GetBuffer('Cookies');
-        if ($cookies == '') {
-            $this->SendDebug(__FUNCTION__, $pre . '  no saved cookies', 0);
-            return false;
+        $this->SendDebug(__FUNCTION__, '*** step 1: send otp', 0);
+        $ret = $this->AuthFetch('POST', $url, ['otp' => $otpCode], $cookies);
+
+        if (isset($ret['code']) == false || $ret['code'] == '') {
+            $page = $this->AuthParsePage(isset($ret['html']) ? $ret['html'] : '');
+            $this->SendDebug(__FUNCTION__, 'page=' . print_r($page, true), 0);
+            if ($page['pageId'] == 'login-otp-email' && $page['loginAction'] != '') {
+                // falscher Code: Volvo zeigt das Formular mit neuer Adresse erneut, der nächste Versuch läuft darüber
+                $this->SetBuffer('NextUrl', $page['loginAction']);
+                $this->SetBuffer('Cookies', json_encode($cookies));
+                $msg = $this->TranslateFormat('Login failed: {$msg}', ['{$msg}' => $page['summary'] != '' ? $page['summary'] : 'invalid code']);
+                $this->PopupMessage($msg);
+                return false;
+            }
+            $err = isset($ret['err']) && $ret['err'] != '' ? $ret['err'] : ($page['summary'] != '' ? $page['summary'] : 'no authorization code, page "' . $page['pageId'] . '"');
+            return $this->AuthFailed(__FUNCTION__, self::$IS_AUTHERROR, $err);
         }
-        $this->SendDebug(__FUNCTION__, $pre . '  use saved cookies=' . $cookies, 0);
+
+        $this->SendDebug(__FUNCTION__, '*** step 2: fetch token', 0);
+        $pem = $this->DpopCreateKey();
+        if ($pem == '') {
+            return $this->AuthFailed(__FUNCTION__, self::$IS_AUTHERROR, 'unable to create DPoP key');
+        }
+
+        $url = self::$token_url;
 
         $headerfields = [
-            'Authorization'   => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'User-Agent'      => self::$user_agent,
-            'Content-Type'    => 'application/json; charset=utf-8',
-            'Accept'          => 'application/json',
-            'Accept-Encoding' => 'gzip',
-            'x-xsrf-header'   => 'PingFederate',
+            'DPoP'         => $this->DpopProof($pem, 'POST', $url),
+            'User-Agent'   => self::$user_agent,
+            'Content-Type' => 'application/x-www-form-urlencoded',
+            'Accept'       => 'application/json',
         ];
         $header = $this->build_header($headerfields);
 
         $postfields = [
-            'otp' => $otpCode,
-        ];
-        $postdata = json_encode($postfields);
-
-        $curl_opts = [
-            CURLOPT_URL            => $url,
-            CURLOPT_HTTPHEADER     => $header,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $postdata,
-            CURLOPT_HEADER         => true,
-            CURLINFO_HEADER_OUT    => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 30,
-            CURLOPT_COOKIE         => $cookies,
-        ];
-
-        $this->SendDebug(__FUNCTION__, $pre . '  http-POST, url=' . $url, 0);
-        $this->SendDebug(__FUNCTION__, $pre . '  ... headerfields=' . print_r($headerfields, true), 0);
-        $this->SendDebug(__FUNCTION__, $pre . '  ... postfields=' . print_r($postfields, true), 0);
-
-        $time_start = microtime(true);
-
-        $ch = curl_init();
-        curl_setopt_array($ch, $curl_opts);
-        $response = curl_exec($ch);
-        $cerrno = curl_errno($ch);
-        $cerror = $cerrno ? curl_error($ch) : '';
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curl_info = curl_getinfo($ch);
-        if (IPS_GetKernelVersion() < 8.5) {
-            curl_close($ch);
-        }
-
-        $duration = round(microtime(true) - $time_start, 2);
-        $this->SendDebug(__FUNCTION__, $pre . '   => errno=' . $cerrno . ', httpcode=' . $httpcode . ', duration=' . $duration . 's', 0);
-        $this->SendDebug(__FUNCTION__, $pre . '   => response=' . $response, 0);
-
-        $statuscode = 0;
-        $err = '';
-
-        if ($cerrno) {
-            $statuscode = self::$IS_SERVERERROR;
-            $err = 'got curl-errno ' . $cerrno . ' (' . $cerror . ')';
-        } else {
-            $header_size = $curl_info['header_size'];
-            $head = substr($response, 0, $header_size);
-            $body = substr($response, $header_size);
-            $this->SendDebug(__FUNCTION__, $pre . '   => head=' . $head, 0);
-            $this->SendDebug(__FUNCTION__, $pre . '   => body=' . $body, 0);
-
-            if (preg_match_all('/^Set-Cookie:\s+(.*);/miU', $head, $matches)) {
-                $cookies = implode('; ', $matches[1]);
-            } else {
-                $cookies = '';
-            }
-            $this->SendDebug(__FUNCTION__, $pre . '   => cookies=' . $cookies, 0);
-
-            if ($httpcode != 200) {
-                $statuscode = self::$IS_HTTPERROR;
-                $err = 'got http-code ' . $httpcode;
-            }
-        }
-        if ($statuscode == 0) {
-            $jbody = json_decode($body, true);
-            if ($jbody == false) {
-                $statuscode = self::$IS_INVALIDDATA;
-                $err = 'invalid/malformed data';
-            } else {
-                $this->SendDebug(__FUNCTION__, $pre . '   => jbody=' . print_r($jbody, true), 0);
-            }
-        }
-        if ($statuscode == 0) {
-            if (isset($jbody['status']) == false) {
-                $statuscode = self::$IS_AUTHERROR;
-                $err = 'missing field "status"';
-            }
-        }
-        if ($statuscode == 0) {
-            $auth_state = $jbody['status'];
-            if ($auth_state != 'OTP_VERIFIED') {
-                $statuscode = self::$IS_AUTHERROR;
-                if (isset($jbody['details'][0]['userMessage'])) {
-                    $err = $jbody['details'][0]['userMessage'];
-                } else {
-                    $err = 'unexpected state "' . $auth_state . '"';
-                }
-            }
-        }
-        if ($statuscode == 0) {
-            if (isset($jbody['_links']['continueAuthentication']['href']) == false) {
-                $statuscode = self::$IS_AUTHERROR;
-                $err = 'missing field "_links.continueAuthentication.href"';
-            }
-        }
-
-        $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
-        if ($collectApiCallStats) {
-            $this->ApiCallCollect($url, $err, $statuscode);
-        }
-
-        if ($statuscode) {
-            $this->SendDebug(__FUNCTION__, $pre . '  ' . $err, 0);
-            $this->MaintainStatus($statuscode);
-            $this->SetBuffer('Cookies', '');
-            $this->SetBuffer('NextUrl', '');
-            $msg = $this->TranslateFormat('Login failed: {$msg}', ['{$msg}' => $err]);
-            $this->PopupMessage($msg);
-            return false;
-        }
-
-        $url = $jbody['_links']['continueAuthentication']['href'] . '?action=continueAuthentication';
-        $url = preg_replace('#^http://#', 'https://', $url);
-
-        $pre = 'step 2';
-        $this->SendDebug(__FUNCTION__, '*** ' . $pre, 0);
-
-        $headerfields = [
-            'Authorization'   => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'User-Agent'      => self::$user_agent,
-            'Content-Type'    => 'application/json; charset=utf-8',
-            'Accept'          => 'application/json',
-            'Accept-Encoding' => 'gzip',
-            'x-xsrf-header'   => 'PingFederate',
-        ];
-        $header = $this->build_header($headerfields);
-
-        $postfields = [
+            'grant_type'    => 'authorization_code',
+            'client_id'     => self::$client_id,
+            'code'          => $ret['code'],
+            'redirect_uri'  => self::$redirect_uri,
+            'code_verifier' => $verifier,
         ];
         $postdata = http_build_query($postfields);
 
@@ -871,15 +759,11 @@ class VolvoIO extends IPSModule
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $postdata,
             CURLOPT_HEADER         => true,
-            CURLINFO_HEADER_OUT    => true,
-            CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 30,
-            CURLOPT_COOKIE         => $cookies,
         ];
 
-        $this->SendDebug(__FUNCTION__, $pre . '  http-GET, url=' . $url, 0);
-        $this->SendDebug(__FUNCTION__, $pre . '  ... headerfields=' . print_r($headerfields, true), 0);
+        $this->SendDebug(__FUNCTION__, 'http-POST, url=' . $url, 0);
 
         $time_start = microtime(true);
 
@@ -895,66 +779,35 @@ class VolvoIO extends IPSModule
         }
 
         $duration = round(microtime(true) - $time_start, 2);
-        $this->SendDebug(__FUNCTION__, $pre . '   => errno=' . $cerrno . ', httpcode=' . $httpcode . ', duration=' . $duration . 's', 0);
-        $this->SendDebug(__FUNCTION__, $pre . '   => response=' . $response, 0);
+        $this->SendDebug(__FUNCTION__, ' => errno=' . $cerrno . ', httpcode=' . $httpcode . ', duration=' . $duration . 's', 0);
 
         $statuscode = 0;
         $err = '';
+        $jbody = false;
 
         if ($cerrno) {
             $statuscode = self::$IS_SERVERERROR;
             $err = 'got curl-errno ' . $cerrno . ' (' . $cerror . ')';
         } else {
-            $header_size = $curl_info['header_size'];
-            $head = substr($response, 0, $header_size);
-            $body = substr($response, $header_size);
-            $this->SendDebug(__FUNCTION__, $pre . '   => head=' . $head, 0);
-            $this->SendDebug(__FUNCTION__, $pre . '   => body=' . $body, 0);
-
-            if (preg_match_all('/^Set-Cookie:\s+(.*);/miU', $head, $matches)) {
-                $cookies = implode('; ', $matches[1]);
-            } else {
-                $cookies = '';
-            }
-            $this->SendDebug(__FUNCTION__, $pre . '   => cookies=' . $cookies, 0);
-
+            $body = substr($response, $curl_info['header_size']);
+            $jbody = json_decode($body, true);
             if ($httpcode != 200) {
                 $statuscode = self::$IS_HTTPERROR;
-                $err = 'got http-code ' . $httpcode;
-            }
-        }
-        if ($statuscode == 0) {
-            $jbody = json_decode($body, true);
-            if ($jbody == false) {
+                $err = 'got http-code ' . $httpcode . (isset($jbody['error']) ? ' (' . $jbody['error'] . ')' : '');
+            } elseif ($jbody == false) {
                 $statuscode = self::$IS_INVALIDDATA;
                 $err = 'invalid/malformed data';
-            } else {
-                $this->SendDebug(__FUNCTION__, $pre . '   => jbody=' . print_r($jbody, true), 0);
             }
         }
         if ($statuscode == 0) {
-            if (isset($jbody['status']) == false) {
-                $statuscode = self::$IS_AUTHERROR;
-                $err = 'missing field "status"';
-            }
-        }
-        if ($statuscode == 0) {
-            $auth_state = $jbody['status'];
-            if ($auth_state != 'COMPLETED') {
-                $statuscode = self::$IS_AUTHERROR;
-                if (isset($jbody['details'][0]['userMessage'])) {
-                    $err = $jbody['details'][0]['userMessage'];
-                } else {
-                    $err = 'unexpected state "' . $auth_state . '"';
+            foreach (['access_token', 'refresh_token', 'expires_in'] as $field) {
+                if (isset($jbody[$field]) == false) {
+                    $statuscode = self::$IS_INVALIDDATA;
+                    $err = 'missing field "' . $field . '"';
+                    break;
                 }
             }
         }
-        if ($statuscode == 0) {
-            if (isset($jbody['authorizeResponse']['code']) == false) {
-                $statuscode = self::$IS_AUTHERROR;
-                $err = 'missing field "authorizeResponse"';
-            }
-        }
 
         $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
         if ($collectApiCallStats) {
@@ -962,129 +815,10 @@ class VolvoIO extends IPSModule
         }
 
         if ($statuscode) {
-            $this->SendDebug(__FUNCTION__, $pre . '  ' . $err, 0);
-            $this->MaintainStatus($statuscode);
-            $this->SetBuffer('Cookies', '');
-            $this->SetBuffer('NextUrl', '');
-            $msg = $this->TranslateFormat('Login failed: {$msg}', ['{$msg}' => $err]);
-            $this->PopupMessage($msg);
-            return false;
+            return $this->AuthFailed(__FUNCTION__, $statuscode, $err);
         }
 
-        $code = $jbody['authorizeResponse']['code'];
-
-        $pre = 'step 3';
-        $this->SendDebug(__FUNCTION__, '*** ' . $pre, 0);
-
-        $url = 'https://volvoid.eu.volvocars.com/as/token.oauth2';
-
-        $headerfields = [
-            'Authorization' => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'User-Agent'    => self::$user_agent,
-            'Content-Type'  => 'application/x-www-form-urlencoded',
-            'Accept'        => 'application/json',
-        ];
-        $header = $this->build_header($headerfields);
-
-        $postfields = [
-            'grant_type' => 'authorization_code',
-            'code'       => $code,
-        ];
-        $postdata = http_build_query($postfields);
-
-        $curl_opts = [
-            CURLOPT_URL            => $url,
-            CURLOPT_HTTPHEADER     => $header,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $postdata,
-            CURLOPT_HEADER         => true,
-            CURLINFO_HEADER_OUT    => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 30,
-        ];
-
-        $this->SendDebug(__FUNCTION__, $pre . '  http-POST, url=' . $url, 0);
-        $this->SendDebug(__FUNCTION__, $pre . '  ... headerfields=' . print_r($headerfields, true), 0);
-        $this->SendDebug(__FUNCTION__, $pre . '  ... postfields=' . print_r($postfields, true), 0);
-
-        $time_start = microtime(true);
-
-        $ch = curl_init();
-        curl_setopt_array($ch, $curl_opts);
-        $response = curl_exec($ch);
-        $cerrno = curl_errno($ch);
-        $cerror = $cerrno ? curl_error($ch) : '';
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curl_info = curl_getinfo($ch);
-        if (IPS_GetKernelVersion() < 8.5) {
-            curl_close($ch);
-        }
-
-        $duration = round(microtime(true) - $time_start, 2);
-        $this->SendDebug(__FUNCTION__, $pre . '   => errno=' . $cerrno . ', httpcode=' . $httpcode . ', duration=' . $duration . 's', 0);
-        $this->SendDebug(__FUNCTION__, $pre . '   => response=' . $response, 0);
-
-        $statuscode = 0;
-        $err = '';
-
-        if ($cerrno) {
-            $statuscode = self::$IS_SERVERERROR;
-            $err = 'got curl-errno ' . $cerrno . ' (' . $cerror . ')';
-        } else {
-            $header_size = $curl_info['header_size'];
-            $head = substr($response, 0, $header_size);
-            $body = substr($response, $header_size);
-            $this->SendDebug(__FUNCTION__, $pre . '   => head=' . $head, 0);
-            $this->SendDebug(__FUNCTION__, $pre . '   => body=' . $body, 0);
-
-            if ($httpcode != 200) {
-                $statuscode = self::$IS_HTTPERROR;
-                $err = 'got http-code ' . $httpcode;
-            }
-        }
-        if ($statuscode == 0) {
-            $jbody = json_decode($body, true);
-            if ($jbody == false) {
-                $statuscode = self::$IS_INVALIDDATA;
-                $err = 'invalid/malformed data';
-            } else {
-                $this->SendDebug(__FUNCTION__, $pre . '   => jbody=' . print_r($jbody, true), 0);
-            }
-        }
-        if ($statuscode == 0) {
-            if (isset($jbody['access_token']) == false) {
-                $statuscode = self::$IS_INVALIDDATA;
-                $err = 'missing field "access_token"';
-            }
-        }
-        if ($statuscode == 0) {
-            if (isset($jbody['refresh_token']) == false) {
-                $statuscode = self::$IS_INVALIDDATA;
-                $err = 'missing field "refresh_token"';
-            }
-        }
-        if ($statuscode == 0) {
-            if (isset($jbody['expires_in']) == false) {
-                $statuscode = self::$IS_INVALIDDATA;
-                $err = 'missing field "expires_in"';
-            }
-        }
-
-        $collectApiCallStats = $this->ReadPropertyBoolean('collectApiCallStats');
-        if ($collectApiCallStats) {
-            $this->ApiCallCollect($url, $err, $statuscode);
-        }
-
-        if ($statuscode) {
-            $this->SendDebug(__FUNCTION__, $pre . '  ' . $err, 0);
-            $this->MaintainStatus($statuscode);
-            $this->SetBuffer('Cookies', '');
-            $this->SetBuffer('NextUrl', '');
-            $msg = $this->TranslateFormat('Login failed: {$msg}', ['{$msg}' => $err]);
-            $this->PopupMessage($msg);
-            return false;
-        }
+        $this->WriteAttributeString('ApiDpopKey', $pem);
 
         $access_token = $jbody['access_token'];
         $expiration = time() + $jbody['expires_in'];
@@ -1095,6 +829,7 @@ class VolvoIO extends IPSModule
 
         $this->SetBuffer('Cookies', '');
         $this->SetBuffer('NextUrl', '');
+        $this->SetBuffer('CodeVerifier', '');
 
         $msg = $this->Translate('Login succeeded');
         $this->PopupMessage($msg);
@@ -1367,17 +1102,27 @@ class VolvoIO extends IPSModule
             return $refresh_token;
         }
 
-        $url = 'https://volvoid.eu.volvocars.com/as/token.oauth2';
+        // Tokens des abgeschalteten Clients sind ohne DPoP-Schlüssel und nicht mehr gültig
+        $pem = $this->ReadAttributeString('ApiDpopKey');
+        if ($pem == '') {
+            $this->SendDebug(__FUNCTION__, 'refresh_token without DPoP key, new login is needed', 0);
+            $this->SetRefreshToken('');
+            $this->SetAccessToken('');
+            return '';
+        }
+
+        $url = self::$token_url;
 
         $headerfields = [
-            'Authorization' => 'Basic ' . base64_encode(self::$client_id . ':' . self::$client_secret),
-            'Content-Type'  => 'application/x-www-form-urlencoded',
-            'Accept'        => 'application/json',
+            'DPoP'         => $this->DpopProof($pem, 'POST', $url),
+            'Content-Type' => 'application/x-www-form-urlencoded',
+            'Accept'       => 'application/json',
         ];
         $header = $this->build_header($headerfields);
 
         $postfields = [
             'grant_type'    => 'refresh_token',
+            'client_id'     => self::$client_id,
             'refresh_token' => $refresh_token,
         ];
         $postdata = http_build_query($postfields);
@@ -1432,8 +1177,15 @@ class VolvoIO extends IPSModule
                 $statuscode = self::$IS_UNAUTHORIZED;
                 $err = 'got http-code ' . $httpcode . ' (unauthorized)';
             } elseif ($httpcode != 200) {
-                $statuscode = self::$IS_HTTPERROR;
-                $err = 'got http-code ' . $httpcode;
+                $jerr = json_decode($body, true);
+                if (isset($jerr['error']) && in_array($jerr['error'], ['invalid_grant', 'invalid_client'])) {
+                    // Anmeldung abgelaufen oder widerrufen: hilft nur eine neue Anmeldung
+                    $statuscode = self::$IS_UNAUTHORIZED;
+                    $err = 'got http-code ' . $httpcode . ' (' . $jerr['error'] . ')';
+                } else {
+                    $statuscode = self::$IS_HTTPERROR;
+                    $err = 'got http-code ' . $httpcode;
+                }
             }
         }
         if ($statuscode == 0) {
@@ -1600,6 +1352,7 @@ class VolvoIO extends IPSModule
 
         $this->SetRefreshToken('');
         $this->SetAccessToken('');
+        $this->WriteAttributeString('ApiDpopKey', '');
 
         IPS_SemaphoreLeave($this->SemaphoreID);
     }

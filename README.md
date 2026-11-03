@@ -75,6 +75,7 @@ Entsperrt die Türen
 | Zugang prüfen | Prüft, ob die Angaben korrekt sind |
 
 _[1]_: die Methode gilt für die Anmeldung bei dem [Volvo-Entwicklerkonto](https://developer.volvocars.com) mit dem *VCC API key* der eigenen *API application*. Hier wir nach Anforderung ein OTP (ein Code) an die im Konto hinterlegten Mailadresse geschickt, mitbdem die Anmeldung bestätigt wird.
+Die Anmeldung läuft seit dem 26.10.2026 über den öffentlichen Client der Volvo Cars App (Authorization Code mit PKCE, Tokens per DPoP an einen eigenen Schlüssel gebunden). Dafür wird die PHP-Erweiterung *openssl* benötigt. Nach dem Update ist einmalig eine neue Anmeldung nötig. Die Lebensdauer des Refresh-Tokens ist nicht dokumentiert; läuft die Anmeldung ab, geht die Instanz auf *nicht angemeldet* und die Anmeldung mit Code muss wiederholt werden.
 _[2]_: die Methode ist für die Anmeldung via IP-Symcon
 
 ### b. VolvoConfig
