@@ -147,6 +147,9 @@ Volvo.Speed
 
 ## 7. Versions-Historie
 
+- 1.5 @ 04.11.2026 07:07
+  - Fix: Anmeldung nach Abschaltung des Volvo-Clients angepasst (Änderung dqnkenswerter Weise durch @PeterChrisben)
+
 - 1.4 @ 11.05.2026 14:55
   - Fix: Änderung von deprecated php code
   - Fix: Änderung der API bei der Verarbeitung des OTP-Codes im Login nachgeführt
