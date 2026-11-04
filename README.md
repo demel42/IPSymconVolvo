@@ -148,7 +148,7 @@ Volvo.Speed
 ## 7. Versions-Historie
 
 - 1.5 @ 04.11.2026 07:07
-  - Fix: Anmeldung nach Abschaltung des Volvo-Clients angepasst (Änderung dqnkenswerter Weise durch @PeterChrisben)
+  - Fix: Anmeldung nach Abschaltung des Volvo-Clients angepasst (Änderung dankenswerterweise durch @PeterChrisben)
 
 - 1.4 @ 11.05.2026 14:55
   - Fix: Änderung von deprecated php code
